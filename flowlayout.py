@@ -109,7 +109,7 @@ class Flowlayout(tk.Frame):
             self.textwidget.delete(tk.INSERT)
             self.textwidget.config(state=tk.DISABLED)
             log.info('contenido borrados')
-        log.info('index ->', index)
+        log.info(f'index -> {index}')
         thread = threading.Thread(target=self.load_from_file)
         thread.daemon = True
         thread.start()
