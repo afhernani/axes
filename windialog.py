@@ -7,7 +7,7 @@ import shutil
 from os.path import join
 # from functools import partial
 import tkinter as tk
-from tkinter import ttk
+from tkinter import Frame, ttk
 from tkinter import filedialog as fd
 from tkinter.messagebox import showerror, showinfo
 import threading
@@ -15,7 +15,7 @@ import threading
 __author__ = 'Hernani Aleman Ferraz'
 __email__ = 'afhernani@gmail.com'
 __apply__ = 'GUI tk - Custom File widgets'
-__version__ = '1'
+__version__ = '1.1.0'
 
 __all__ = ('LabelEntryButton', 'FrameButtons',
            'WindowCopyTo', 'CustomEntry',
@@ -71,7 +71,7 @@ class CustomEntry(tk.Frame):
     entry: tk.Entry
 
     def __init__(self, parent, *args, **kwargs):
-        tk.Frame.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
         self.parent = parent
 
         self.text_label = tk.StringVar(value="Label")
@@ -96,7 +96,7 @@ class LabelEntryButton(tk.Frame):
     button: tk.Button
 
     def __init__(self, parent, *args, **kwargs):
-        tk.Frame.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
         self.parent = parent
 
         self.text_label = tk.StringVar(value='Origen')
@@ -119,7 +119,7 @@ class FrameButtons(tk.Frame):
     btnaceptar: tk.Button
 
     def __init__(self, parent, *args, **kwargs):
-        tk.Frame.__init__(self, parent, *args, **kwargs)
+        super().__init__(parent, *args, **kwargs)
         self.parent = parent
 
         self.btnaceptar = tk.Button(self, text='Aceptar')
@@ -134,12 +134,14 @@ class OpenDialogRename(tk.Toplevel):
     name: tk.StringVar
     t: threading
 
-    def __init__(self, parent, *args, **kwargs):
-        tk.Toplevel.__init__(self, parent, *args, **kwargs)
+    def __init__(self, parent, url=None, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
 
         self.geometry('600x120')
         # self.iconbitmap('collage.ico') # pathdir
         self.title('RENAME ...')
+
+        self.url = tk.StringVar() if url is  None else url
 
         padding = {'width': 400, 'height': 21, 'padx': 5, 'pady': 5}
         self.file = tk.StringVar(value='file')
@@ -163,7 +165,7 @@ class OpenDialogRename(tk.Toplevel):
 
     def select_archivo(self):
         filetypes = (
-            ('text files', '*.txt'),
+            ('text files', '*.mp4'),
             ('All files', '*.*')
         )
         filename = fd.askopenfilename(
@@ -197,31 +199,36 @@ class OpenDialogRename(tk.Toplevel):
                                  )
         showinfo(title="Renombrando ...", message=f"renombrando {origen} a {destino}")
         self.t.start()
+        self.url.set(destino)
         self.destroy()
         self.update()
-        return destino
 
     def cancelar_click(self):
         self.destroy()
         self.update()
 
 
-class WindowCopyTo(tk.Tk):
+class WindowCopyTo(tk.Toplevel):
 
     file: tk.StringVar
     path_to_copy: tk.StringVar
     t: threading
     copy: bool
 
-    def __init__(self, parent, *args, **kwargs):
-        tk.Toplevel.__init__(self, parent, *args, **kwargs)
+    def __init__(self, parent, copy=None, donde_fue=None, *args, **kwargs):
+        '''copy = True, make a copy False, move file
+            donde_esta = tk.StringVar where file is copied.
+            copy = False, => move to donde_esta.
+        '''
+        super().__init__(parent, *args, **kwargs)
         
         self.geometry('600x120')
         # self.iconbitmap('collage.ico') # pathdir
         self.title('COPY ...')
         self.wm_protocol("WM_DELETE_WINDOW", self.handlefocus)
 
-        self.copi = True
+        self.copy = True if copy is None else copy
+        self.donde_fue = tk.StringVar() if donde_fue is  None else donde_fue
 
         padding = {'width': 400, 'height': 21, 'padx': 5, 'pady': 5}
         self.file = tk.StringVar(value='file')
@@ -298,7 +305,7 @@ class WindowCopyTo(tk.Tk):
                                  )
             showinfo(title="moviendo ...", message=f"moviendo {name} a {destino}")
         self.t.start()
-        self.path_to_copy.set(destino)
+        self.donde_fue.set(os.path.join(destino, name))
         self.destroy()
         self.update()
 
@@ -309,7 +316,7 @@ class WindowCopyTo(tk.Tk):
 
 class App(tk.Tk):
     def __init__(self, *args, **kwargs):
-        tk.Tk.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.geometry('300x120')
         # self.iconbitmap('collage.ico') # pathdir
         self.title('Main Window')
@@ -336,26 +343,27 @@ class App(tk.Tk):
 
     def win_cp(self):
         """Action copy file"""
+        donde_fue = tk.StringVar(value='mi copia')
         option = {'width': 600, 'height': 120}
-        window = WindowCopyTo(self, **option)
+        window = WindowCopyTo(self, donde_fue=donde_fue, **option)
         # window.title('MOVER ...')
         # window.copy = False
         window.file.set("E:\\Imagenes\\coronavirus.jfif")
         window.path_to_copy.set("E:\\")
-        window.grab_set()
+        window.wait_window(window.grab_set())
+        print(donde_fue.get())
 
     def win_mv(self):
         """Action move file"""
-        path_to_copy = tk.StringVar()
-        window = WindowCopyTo(self)
+        url = tk.StringVar()
+        window = WindowCopyTo(self, copy=False, donde_fue=url)
         window.title('MOVER ...')
-        window.copy = False
         window.file.set("E:\\Imagenes\\coronavirus.jfif")
-        window.path_to_copy = path_to_copy
-        path_to_copy.set("E:\\")
+        window.path_to_copy.set("E:\\")
         # window.grab_set()
         self.wait_window(window.grab_set())
-        print(path_to_copy.get())
+        if os.path.exists(url.get()):
+            print(url.get())
 
     def delete(self):
         """action delete or remove file"""
