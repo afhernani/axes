@@ -83,6 +83,7 @@ class SpritePane(tk.Frame):
         self.canvas.bind('<Button-3>', self.my_popup) # make menu
         self.animating = True
         # self.animate(0)
+        self.graphics.vid.release()
 
     # actuaciones de menu
     def my_popup(self, event):
@@ -143,6 +144,8 @@ class SpritePane(tk.Frame):
         
     def animate(self):
         # print(counter)
+        if not self.graphics.vid.isOpened():
+            return
         nt, frame = self.graphics.get_frame()
         if nt:
             frame_m = Imagetrans.engine(size=self.size, img=Image.fromarray(frame))
@@ -155,6 +158,7 @@ class SpritePane(tk.Frame):
 
     def enter(self, event):
         self.animating = True
+        self.graphics.set_only_video(self.url)
         self.f_way += self.f_interval
         if self.f_way >= self.graphics.seconds:
             self.f_way = self.f_interval 
@@ -163,6 +167,7 @@ class SpritePane(tk.Frame):
     
     def leave(self, event):
         self.after_cancel(self.animate)
+        self.graphics.vid.release()
         self.animating = False
 
     def double_click_canvas(self, event):
