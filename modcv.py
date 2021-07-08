@@ -56,6 +56,9 @@ class MyVideoCapture:
             self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
             self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
+    def set_only_video(self, url):
+        self.vid =cv2.VideoCapture(url)
+
     def set_video(self, video_source):
         self.video_source=None if video_source is None else video_source
         # Open the video source
