@@ -263,7 +263,7 @@ class WindowCopyTo(tk.Toplevel):
 
     def select_archivo(self):
         filetypes = (
-            ('text files', '*.txt'),
+            ('text files', '*.mp4'),
             ('All files', '*.*')
         )
         filename = fd.askopenfilename(
