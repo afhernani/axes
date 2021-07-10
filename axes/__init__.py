@@ -19,6 +19,7 @@ try:
     from .flowlayout import Flowlayout
     from .imagetrans import Imagetrans
     from .spritepane import SpritePane
+    from .photos import Photos
     from .ToolTip import ToolTip, createToolTip
     from .tooltipmenu import ToolTipMenu, createToolTipMenu
     from .windialog import LabelEntryButton, FrameButtons
@@ -27,6 +28,7 @@ except ImportError:
     from flowlayout import Flowlayout
     from imagetrans import Imagetrans
     from spritepane import SpritePane
+    from photos import Photos
     from ToolTip import ToolTip, createToolTip
     from tooltipmenu import ToolTipMenu, createToolTipMenu
     from windialog import LabelEntryButton, FrameButtons
