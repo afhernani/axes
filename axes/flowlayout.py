@@ -3,7 +3,10 @@
 import tkinter as tk
 import os
 import threading
-from spritepane import SpritePane
+try:
+    from .spritepane import SpritePane
+except ImportError:
+    from spritepane import SpritePane
 from tkinter import filedialog, messagebox
 import configparser
 from tkinter import ttk
