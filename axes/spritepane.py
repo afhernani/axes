@@ -5,24 +5,29 @@ import tkinter as tk
 from PIL import Image, ImageTk, ImageSequence
 import os, sys, subprocess
 from threading import Thread
-from modcv import MyVideoCapture
-from ToolTip import createToolTip
-from tooltipmenu import createToolTipMenu
-from windialog import WindowCopyTo, ToolFile, OpenDialogRename
-from imagetrans import Imagetrans
-# --- TODO: PENDIENTE USO
-# from ffmpgelib import MediaImage, Graphics
-# from ffmpgelib import createToolTip
-# from datetime import timedelta
-# from ffmpgelib import createToolTipMenu, ToolFile
-# from ffmpgelib import WindowCopyTo, OpenDialogRename
-from photos import Photos
+try:
+    from modcv import MyVideoCapture
+    from ToolTip import createToolTip
+    from tooltipmenu import createToolTipMenu
+    from windialog import WindowCopyTo, ToolFile, OpenDialogRename
+    from imagetrans import Imagetrans
+    from photos import Photos
+except ImportError:
+    from .modcv import MyVideoCapture
+    from .ToolTip import createToolTip
+    from .tooltipmenu import createToolTipMenu
+    from .windialog import WindowCopyTo, ToolFile, OpenDialogRename
+    from .imagetrans import Imagetrans
+    from .photos import Photos
+
 import logging
 
 __author__ = 'Hernani Aleman Ferraz'
 __email__ = 'afhernani@gmail.com'
 __apply__ = 'axe - spritepane'
 __version__ = '1.8.x'
+
+__all__=('SpritePane')
 
 logging.basicConfig(level=logging.DEBUG)
 
