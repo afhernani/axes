@@ -10,6 +10,7 @@ from PIL import Image, ImageOps, ImageDraw
 __author__ = 'Hernani Aleman Ferraz'
 __email__ = 'afhernani@gmail.com'
 __apply__ = 'imagetrans'
+
 __version__ = '1.0'
 
 __all__ = ('Imagetrans')
