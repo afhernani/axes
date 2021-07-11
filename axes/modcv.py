@@ -7,7 +7,7 @@ from tkinter.constants import LEFT, RIGHT, TRUE
 from tkinter.messagebox import showerror, showinfo
 from tkinter import filedialog as fd
 import cv2
-import PIL.Image, PIL.ImageTk
+from PIL import Image, ImageTk
 import time
 import datetime
 import logging
@@ -26,44 +26,56 @@ logging.basicConfig(level=logging.DEBUG)
 
 class MyVideoCapture:
     
-    vid = cv2.VideoCapture()
+    vid = None
     
-    def __init__(self, video_source=None):
+    def __init__(self, video_source=None, thumb=None):
+        ''' thumb = (100, 100 )'''
+        size = (100, 100 ) if thumb is None else thumb
         self.poss = 0.0 # posicion en milisegundos
         self.frames = []
         try:
             self.set_video(video_source)
+            sec = round(self.seconds / 3 , 2)
+            self.vid2.set(cv2.CAP_PROP_POS_MSEC, sec*1000)
+            imagen = cv2.cvtColor(self.vid2.read()[1], cv2.COLOR_BGR2RGB)
+            imagen_f = Image.fromarray(imagen)
+            imagen_f.thumbnail(size)
+            self.photo = ImageTk.PhotoImage(image=imagen_f)
+            self.vid2.release()
         except Exception as e:
-            logging.warning(str(e.args))
+            logging.warning(f"init: Exception: {str(e.args)}")
         
     def set_info(self):
-        if self.vid.isOpened():
-            self.n_frames = self.vid.get(cv2.CAP_PROP_FRAME_COUNT)
-            self.fps = int(self.vid.get(cv2.CAP_PROP_FPS))
+        if self.vid2.isOpened():
+            self.n_frames = self.vid2.get(cv2.CAP_PROP_FRAME_COUNT)
+            self.fps = int(self.vid2.get(cv2.CAP_PROP_FPS))
             self.seconds = round((self.n_frames / self.fps), 3)
             self.time = str(datetime.timedelta(seconds=self.seconds))
     
     def set_dimension(self):
-        if self.vid.isOpened():
+        if self.vid2.isOpened():
             # Get video source width and height
-            self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
-            self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            self.width = self.vid2.get(cv2.CAP_PROP_FRAME_WIDTH)
+            self.height = self.vid2.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
-    def set_only_video(self, url):
-        self.vid =cv2.VideoCapture(url)
+    def set_only_video(self, url=None):
+        '''reset VideoCapture url=None, --> self.url'''
+        new_url=self.video_source if url is None else url
+        self.vid =cv2.VideoCapture(new_url)
 
     def set_video(self, video_source):
         self.video_source=None if video_source is None else video_source
         # Open the video source
-        self.vid = cv2.VideoCapture(video_source)
-        if not self.vid.isOpened():
+        self.vid2 = cv2.VideoCapture(video_source)
+        if not self.vid2.isOpened():
             raise ValueError(f"Unable to open video source: {video_source}")
         self.set_dimension()
         self.set_info()
 
     def set_poss(self, sec):
         '''set possition in secons'''
-        self.vid.set(cv2.CAP_PROP_POS_MSEC,sec*1000)
+        if self.vid.isOpened():
+            self.vid.set(cv2.CAP_PROP_POS_MSEC,sec*1000)
 
     def get_frame(self):
         if self.vid.isOpened():
@@ -77,9 +89,10 @@ class MyVideoCapture:
                 self.set_poss(0) # posicionamos al principio
                 return (ret, None)
         else:
-            raise ValueError(f"not open video source: {self.video_source}")
+            return (False, None)
+            # raise ValueError(f"not open video source: {self.video_source}")
 
-    def _get_frame_sec(self, sec):
+    def __get_frame_sec(self, sec):
         '''devuelve true/false, true, guarda imagen de la secuencia sec,
          en segundos.'''
         self.vid.set(cv2.CAP_PROP_POS_MSEC,sec*1000)
@@ -93,7 +106,7 @@ class MyVideoCapture:
 
     def save_gif_file(self, namefile="smiling", duration=0.8):
         logging.info("Extract n frames from video")
-        self._get_frames_from_video()
+        self.__get_frames_from_video()
         logging.info("Saving GIF file")
         if not namefile.endswith(('.gif')):
             namefile += '_nfx_.gif'
@@ -103,14 +116,14 @@ class MyVideoCapture:
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 writer.append_data(rgb_frame)
 
-    def _get_frames_from_video(self, nft=20):
+    def __get_frames_from_video(self, nft=20):
         rate_sec = round((self.seconds / (nft + 1)), 3)
         sec = rate_sec
-        success = self._get_frame_sec(sec)
+        success = self.__get_frame_sec(sec)
         while success:
             sec += rate_sec
             sec = round(sec, 2)
-            success = self._get_frame_sec(sec)
+            success = self.__get_frame_sec(sec)
 
     def release(self):
         ''' release de video soruce when de object is destroy'''
@@ -129,6 +142,7 @@ class App:
         self.all_time = tk.DoubleVar()
         # open video source (by default this will try to open the computer webcam)
         self.vid = MyVideoCapture(self.video_source)
+        self.vid.set_only_video()
         if not self.vid.vid.isOpened():
             showerror(title="Aviso", message=f"No se pudo abrir la fuente {self.video_source}")
             exit(0)
@@ -226,6 +240,7 @@ class App:
             logging.info(f"before load, window {self.window.geometry()}")
             self.video_source = filename
             self.vid = MyVideoCapture(self.video_source)
+            self.vid.set_only_video()
             self.canvas.configure(width=self.vid.width, height=self.vid.height)
             self.all_time.set(self.vid.seconds)
             self.slider.configure(to=self.all_time.get())
@@ -247,7 +262,7 @@ class App:
             return
 
         if ret:
-            self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
+            self.photo = ImageTk.PhotoImage(image = Image.fromarray(frame))
             self.canvas.create_image(0, 0, image = self.photo, anchor = tk.NW)
 
         if self.stop:
@@ -259,4 +274,4 @@ class App:
 
 if __name__ == '__main__':
     # Create a window and pass it to the Application object
-    App(tk.Tk(), "Tkinter and OpenCV", "Believer-Halo-560p.mp4")
+    App(tk.Tk(), "Tkinter and OpenCV", "../_Work/c0c0c9676c2a54230ecb8f894942ad07.mp4")
