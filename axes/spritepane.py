@@ -42,12 +42,12 @@ class SpritePane(tk.Frame):
         self.ni = 32 # num de imagenes a extaer.
         self.timer = 21 if timer is None else timer
         # ---
-        self.width = 300
-        self.height = 220
+        self.width = kargs.get('width', 300)
+        self.height = kargs.get('height', 220)
         self.size =(self.width, self.height)
         # ----
         if self.url.upper().endswith(('.MP4', '.AVI', '.FLV', '.GIF')):
-            self.graphics = MyVideoCapture(self.url)
+            self.graphics = MyVideoCapture(self.url, thumb=(self.width, self.height))
         else:
             raise ValueError(f"Unable to open video source: {self.url}")
 
@@ -74,8 +74,9 @@ class SpritePane(tk.Frame):
         # -- TODO: extraemos imagen:
         self.f_interval = round((self.graphics.seconds / (self.ni + 1)), 2)
         self.f_way = self.f_interval
-        self.graphics.set_poss(self.f_interval)
-        self.photo = ImageTk.PhotoImage(image = Image.fromarray(self.graphics.get_frame()[1]))
+        # self.graphics.set_poss(self.f_interval)
+        # self.photo = ImageTk.PhotoImage(image = Image.fromarray(self.graphics.get_frame()[1]))
+        self.photo = self.graphics.photo
         # -- TODO: FIN EXTRAER 1A IMAGEN
         
         # TODO: creamos canvas
@@ -88,7 +89,6 @@ class SpritePane(tk.Frame):
         self.canvas.bind('<Button-3>', self.my_popup) # make menu
         self.animating = True
         # self.animate(0)
-        self.graphics.vid.release()
 
     # actuaciones de menu
     def my_popup(self, event):
@@ -151,14 +151,18 @@ class SpritePane(tk.Frame):
         # print(counter)
         if not self.animating:
             return
-        nt, frame = self.graphics.get_frame()
+        nt = False
+        try:
+            nt, frame = self.graphics.get_frame()
+        except Exception as e:
+            logging.warning(f"exception animate: {str(nt)} {str(e.args)}")
         if nt:
             frame_m = Imagetrans.engine(size=self.size, img=Image.fromarray(frame))
             self.photo = ImageTk.PhotoImage(image=frame_m )
             self.canvas.itemconfig(self.image, image=self.photo)
         self.f_way = round((self.graphics.poss/ 1000), 2)
         
-        self.after(self.timer, lambda: self.animate())
+        self.after(self.timer, self.animate)
 
     def enter(self, event):
         self.animating = True
