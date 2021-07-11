@@ -131,7 +131,8 @@ class Flowlayout(tk.Frame):
         index = self.textwidget.index(tk.INSERT)
         idx = str(index).split('.')[1]
         self.parent.title('gifview :: ' + idx)
-        return SpritePane(self.textwidget, url=arg)
+        options={'width': self.split_width, 'height': self.split_height}
+        return SpritePane(self.textwidget, url=arg, **options)
 
     def mouse_scroll(self, event):
         log.info('mouse_scroll_control')
