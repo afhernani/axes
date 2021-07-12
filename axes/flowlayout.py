@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding:UTF-8 -*-
 import tkinter as tk
-import os
+import os, sys
 import threading
 try:
     from .spritepane import SpritePane
@@ -11,6 +11,7 @@ from tkinter import filedialog, messagebox
 import configparser
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageSequence
+import psutil
 import logging
 
 __author__ = 'Hernani Aleman Ferraz'
@@ -35,6 +36,7 @@ class Flowlayout(tk.Frame):
     def __init__(self, parent=None, *args, **Kvargs):
         super().__init__(parent, *args, **Kvargs)
         self.parent = parent
+        self.parent.minsize(400, 400)
         self.split_width, self.split_height = 300, 210
         self.parent.title('gifview')
         # self.parent.iconbitmap('@./../ico/super.ico')
@@ -82,6 +84,9 @@ class Flowlayout(tk.Frame):
             size = config.get('Setings', 'split_size')
             size = size.split(',')
             self.split_width, self.split_height = int(size[0]), int(size[1])
+            geometria = config.get('Setings', 'geometry')
+            if geometria:
+                self.parent.geometry(geometria)
             if os.path.exists(dirpathmovies):
                 self.dirpathmovies.set(dirpathmovies)
                 # inicializa la lista con directorio duardao
@@ -97,6 +102,7 @@ class Flowlayout(tk.Frame):
         config.add_section('Setings')
         config.set('Setings', 'dirpathmovies', self.dirpathmovies.get())
         config.set('Setings', 'split_size', "%s, %s"%(str(self.split_width), str(self.split_height)))
+        config.set('Setings', 'geometry', self.parent.geometry())
         with open(self.setingfile, 'w') as configfile:
             config.write(configfile)
         log.info('Write config file')
@@ -109,12 +115,30 @@ class Flowlayout(tk.Frame):
                     fex = os.path.abspath(os.path.join(self.dirpathmovies.get(), fe))
                     log.info(fex)
                     self.textwidget.window_create(tk.INSERT, window=self.load_sprite(arg=fex))
-
+    
+    @staticmethod
+    def restart_program():
+        """Restarts the current program, with file objects and descriptors cleanup"""
+        try:
+            p = psutil.Process(os.getpid())
+            log.warning(f"id: {os.getpid()}")
+            for handler in p.open_files() + p.connections():
+                os.close(handler.fd)
+        except Exception as e:
+            log.error(f"restart Exception: {e}")
+        # obtenemos el proceso ejecutable, // psutil.Process(os.getpid()).exe()
+        python = sys.executable
+        log.warning(f"executable: {python}")
+        os.execl(python, python, *sys.argv)
+    
     def thread_load_files(self):
+        log.info("thread_load_files")
         index = self.textwidget.index(tk.INSERT)
         if index == '1.0':
             log.warning('no tiene contenido')
         else:
+            self.set_init_status()
+            self.restart_program()
             # self.textwidget.config(state=tk.NORMAL)
             self.textwidget.delete(1.0, tk.END)
             # self.textwidget.delete(tk.INSERT)
@@ -125,9 +149,9 @@ class Flowlayout(tk.Frame):
                     log.info(f"destroyed: {type(item)}")
                 else:
                     log.info(f"item destroyed")
-            self.sprite_list = []
             log.info('contenido borrados')
         log.info(f'index -> {index}')
+        self.sprite_list = []
         thread = threading.Thread(target=self.load_from_file)
         thread.daemon = True
         thread.start()
