@@ -32,8 +32,8 @@ extim = ('.jpeg', '.jpg', '.png', '.gif')
 
 
 class Flowlayout(tk.Frame):
-    def __init__(self, parent=None):
-        tk.Frame.__init__(self, parent)
+    def __init__(self, parent=None, *args, **Kvargs):
+        super().__init__(parent, *args, **Kvargs)
         self.parent = parent
         self.split_width, self.split_height = 300, 210
         self.parent.title('gifview')
@@ -66,6 +66,7 @@ class Flowlayout(tk.Frame):
         self.bind_all("<Button-4>", self.mouse_scroll)
         self.bind_all("<Button-5>", self.mouse_scroll)
         self.thread_load_files()
+        self.sprite_list = []
 
     def get_init_status(self):
         '''
@@ -114,10 +115,17 @@ class Flowlayout(tk.Frame):
         if index == '1.0':
             log.warning('no tiene contenido')
         else:
-            self.textwidget.config(state=tk.NORMAL)
+            # self.textwidget.config(state=tk.NORMAL)
             self.textwidget.delete(1.0, tk.END)
-            self.textwidget.delete(tk.INSERT)
-            self.textwidget.config(state=tk.DISABLED)
+            # self.textwidget.delete(tk.INSERT)
+            # self.textwidget.config(state=tk.DISABLED)
+            for item in self.sprite_list:
+                if item:
+                    item.destroy()
+                    log.info(f"destroyed: {type(item)}")
+                else:
+                    log.info(f"item destroyed")
+            self.sprite_list = []
             log.info('contenido borrados')
         log.info(f'index -> {index}')
         thread = threading.Thread(target=self.load_from_file)
@@ -129,10 +137,12 @@ class Flowlayout(tk.Frame):
             log.warning("is not a file")
         # add number of spirtepana to title
         index = self.textwidget.index(tk.INSERT)
-        idx = str(index).split('.')[1]
-        self.parent.title('gifview :: ' + idx)
+        idx = int(str(index).split('.')[1]) + 1
+        self.parent.title('gifview :: ' + str(idx))
         options={'width': self.split_width, 'height': self.split_height}
-        return SpritePane(self.textwidget, url=arg, **options)
+        spt = SpritePane(self.textwidget, url=arg, **options)
+        self.sprite_list.append(spt)
+        return spt
 
     def mouse_scroll(self, event):
         log.info('mouse_scroll_control')
