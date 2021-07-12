@@ -36,7 +36,7 @@ class SpritePane(tk.Frame):
 
     def __init__(self, parent, url=None, timer=None, *args, **kargs):
         
-        tk.Frame.__init__(self, parent, *args, **kargs)
+        super().__init__(parent, *args, **kargs)
         self.parent = parent
         self.url = '' if url is None else os.path.abspath(url) # path viedo
         self.ni = 32 # num de imagenes a extaer.
