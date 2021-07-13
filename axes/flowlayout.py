@@ -169,7 +169,7 @@ class Flowlayout(tk.Frame):
         return spt
 
     def mouse_scroll(self, event):
-        log.info('mouse_scroll_control')
+        # log.info('mouse_scroll_control')
         if event.delta:
             self.textwidget.yview_scroll(int(-1 * (event.delta / 120)), "units")
         else:
