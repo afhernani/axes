@@ -46,7 +46,7 @@ class SpritePane(tk.Frame):
         self.height = kargs.get('height', 220)
         self.size =(self.width, self.height)
         # ----
-        if self.url.upper().endswith(('.MP4', '.AVI', '.FLV', '.GIF')):
+        if self.url.upper().endswith(('.MP4', '.AVI', '.FLV', '.GIF', '.MPG', '.TS', '.WEBM', '.MOV', '.MKV')):
             self.graphics = MyVideoCapture(self.url, thumb=(self.width, self.height))
         else:
             raise ValueError(f"Unable to open video source: {self.url}")
