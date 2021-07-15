@@ -140,8 +140,8 @@ class SpritePane(tk.Frame):
             window = OpenDialogRename(self, url=url, rname=rname, new_url=new_url)
             self.parent.wait_window(window)
             # TODO: al cambiar el nombre, modificar self.url base.
-            if os.path.exists(url.get()):
-                self.url = url.get()
+            if os.path.exists(new_url.get()):
+                self.url = new_url.get()
                 logging.info(f"renombrado a: {self.url}")
         
     def animate(self):
