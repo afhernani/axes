@@ -401,7 +401,7 @@ class App(tk.Tk):
         option = {'width': 600, 'height': 120}
         window = WindowCopyTo(self, url=url, to_=org, new_url=new_url, **option)
         
-        window.wait_window(window) # .grab_set())
+        self.wait_window(window) # .grab_set())
         
         log.info('pass window process')
         log.info(new_url.get())
