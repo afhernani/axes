@@ -103,7 +103,7 @@ class SpritePane(tk.Frame):
             window = WindowCopyTo(self, url=url, to_=to_,  copy=False, new_url=new_url)
             self.parent.wait_window(window)
 
-            if os.path.exists(url.get()):
+            if os.path.exists(new_url.get()):
                 self.url = new_url.get()
                 logging.info(f'file move to: {new_url.get()}')
 
