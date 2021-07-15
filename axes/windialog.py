@@ -11,16 +11,20 @@ from tkinter import Frame, ttk
 from tkinter import filedialog as fd
 from tkinter.messagebox import showerror, showinfo
 import threading
+import logging
 
 __author__ = 'Hernani Aleman Ferraz'
 __email__ = 'afhernani@gmail.com'
 __apply__ = 'GUI tk - Custom File widgets'
-__version__ = '1.1.0'
+__version__ = '1.1.5'
 
 __all__ = ('LabelEntryButton', 'FrameButtons',
            'WindowCopyTo', 'CustomEntry',
            'OpenDialogRename', 'ToolFile')
 
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger('windialog')
 
 class ToolFile(object):
     def __init__(self, widget):
@@ -129,26 +133,31 @@ class FrameButtons(tk.Frame):
 
 
 class OpenDialogRename(tk.Toplevel):
-
-    file: tk.StringVar
-    name: tk.StringVar
-    t: threading
-
-    def __init__(self, parent, url=None, *args, **kwargs):
+    """OpenDialogRename: 
+        url = dir to file, rname = new name is known, new_url = dir to file rename
+    """
+    def __init__(self, parent, url=None, rname=None, new_url=None, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
 
         self.geometry('600x120')
         # self.iconbitmap('collage.ico') # pathdir
         self.title('RENAME ...')
+        self.wm_protocol("WM_DELETE_WINDOW", self.handlefocus)
 
-        self.url = tk.StringVar() if url is  None else url
+        self.focus_force()
+        self.transient(master=parent)
+        self.grab_set()
+
+        self.new_url = tk.StringVar(value='None') if new_url is  None else new_url
 
         padding = {'width': 400, 'height': 21, 'padx': 5, 'pady': 5}
-        self.file = tk.StringVar(value='file')
-        self.name = tk.StringVar(value='name')
+        t = None
+        self.file = tk.StringVar(value='file to rename') if url is None else url
+        name_value = "New_" + os.path.basename(self.file.get())
+        self.name = tk.StringVar(value=name_value) if rname is None else rname
 
         self.feb_ori = LabelEntryButton(self, **padding)
-        self.feb_ori.label.configure(text="Origen:   ")
+        self.feb_ori.label.configure(text="Archive:   ")
         self.feb_ori.entry.configure(textvariable=self.file)
         self.feb_ori.button.configure(text='>>', command=self.select_archivo)  # state=tk.DISABLED,
         self.feb_ori.pack(fill=tk.BOTH)
@@ -165,22 +174,21 @@ class OpenDialogRename(tk.Toplevel):
 
     def select_archivo(self):
         filetypes = (
-            ('text files', '*.mp4'),
-            ('All files', '*.*')
+            ('video files', '*.mp4'), ('video files', '*.avi'), ('video files', '*.mkv'),
+            ('video files', '*.flv'), ('All files', '*.*')
         )
+        initialdir = os.path.dirname(self.file.get())
         filename = fd.askopenfilename(
+            parent=self,
             title='Open a file',
-            initialdir=self.file.get(),
+            initialdir=initialdir,
             filetypes=filetypes)
 
-        showinfo(title='Selected File',
-                 message=filename
-                 )
-        self.file.set(filename)
+        if filename:
+            self.file.set(filename)
+            self.name.set(os.path.basename(filename))
 
     def aceptar_click(self):
-
-        self.withdraw()
 
         origen = self.file.get()
         dirname = os.path.dirname(origen)
@@ -190,35 +198,51 @@ class OpenDialogRename(tk.Toplevel):
         if not ext in name:
             name += ext
         destino = join(dirname, name)
-
+        if not os.path.exists(origen):
+            self.select_archivo()
+            return
+        elif name == '':
+            self.name.set("get-the-new-name")
+            return
+        elif name == oldname:
+            self.new_url.set(origen)
+            self.destroy()
+            self.update()
+            return
+        
+        self.withdraw()
         if oldname != name:
             self.t = threading.Thread(target=ToolFile.move,
                                  args=(origen,
                                        destino,
                                        )
                                  )
-        showinfo(title="Renombrando ...", message=f"renombrando {origen} a {destino}")
-        self.t.start()
-        self.url.set(destino)
+            showinfo(title="Renombrando ...", message=f"renombrando {origen} a {destino}")
+            self.t.start()
+            self.t.join()
+            self.new_url.set(destino)
         self.destroy()
         self.update()
 
     def cancelar_click(self):
         self.destroy()
         self.update()
+    
+    def handlefocus(self):
+        # open a dialog
+        # showinfo("Notice", "Are you sure to close the window")
+        self.destroy()
+        self.update()
 
 
 class WindowCopyTo(tk.Toplevel):
+    """ WindowCopyTo, parameter: copy = True, make a copy. copy=False, move file."""
 
-    file: tk.StringVar
-    path_to_copy: tk.StringVar
-    t: threading
-    copy: bool
-
-    def __init__(self, parent, copy=None, donde_fue=None, *args, **kwargs):
+    def __init__(self, parent, url=None, to_=None, copy=None, new_url=None, *args, **kwargs):
         '''copy = True, make a copy False, move file
-            donde_esta = tk.StringVar where file is copied.
+            new_url = tk.StringVar where file is copied.
             copy = False, => move to donde_esta.
+            url = None, url = tk.SringVar(), to_= tk.StringVar() o None
         '''
         super().__init__(parent, *args, **kwargs)
         
@@ -227,12 +251,19 @@ class WindowCopyTo(tk.Toplevel):
         self.title('COPY ...')
         self.wm_protocol("WM_DELETE_WINDOW", self.handlefocus)
 
+        self.focus_force()
+        self.transient(master=parent)
+        self.grab_set()
+        # self.protocol("WM_DELETE_WINDOW", self.destroy)
+
+        t = None # threading
         self.copy = True if copy is None else copy
-        self.donde_fue = tk.StringVar() if donde_fue is  None else donde_fue
+        if self.copy is False: self.title('MOVE ...')
+        self.donde_fue = tk.StringVar() if new_url is  None else new_url
 
         padding = {'width': 400, 'height': 21, 'padx': 5, 'pady': 5}
-        self.file = tk.StringVar(value='file')
-        self.path_to_copy = tk.StringVar(value='Directorio')
+        self.file = tk.StringVar(value='archivo') if url is None else url
+        self.path_to_copy = tk.StringVar(value='Directorio') if to_ is None else to_
 
         # Datos origen
         self.feb = LabelEntryButton(self, **padding)
@@ -263,33 +294,41 @@ class WindowCopyTo(tk.Toplevel):
 
     def select_archivo(self):
         filetypes = (
-            ('text files', '*.mp4'),
-            ('All files', '*.*')
+            ('video files', '*.mp4'), ('video files', '*.avi'), ('video files', '*.mkv'),
+            ('video files', '*.flv'), ('All files', '*.*')
         )
+        initialdir = os.path.dirname(self.file.get())
         filename = fd.askopenfilename(
+            parent=self,
             title='Open a file',
-            initialdir=self.file.get(),
+            initialdir=initialdir,
             filetypes=filetypes)
-
-        showinfo(title='Selected File',
-                 message=filename
-                 )
-        self.file.set(filename)
+        if filename:
+            showinfo(title='Selected File',
+                    message=filename
+                    )
+            self.file.set(filename)
 
     def select_directorio(self):
-        directory = fd.askdirectory()
+        initialdir = os.path.dirname(self.file.get())
+        directory = fd.askdirectory(parent=self, initialdir=initialdir)
         # showinfo(master=self, title='select_directorio',
         #       message="a lanzado la funcion select_directorio")
-        self.path_to_copy.set(directory)
+        if directory:
+            self.path_to_copy.set(directory)
 
     def aceptar_click(self):
-
-        self.withdraw()
 
         origen = os.path.abspath(self.file.get())
         name = os.path.basename(self.file.get())
         destino = self.path_to_copy.get()
-
+        if not os.path.exists(origen):
+            self.select_archivo()
+            return
+        elif not os.path.exists(destino):
+            self.select_directorio()
+            return
+        self.withdraw()
         if self.copy:
             self.t = threading.Thread(target=ToolFile.copy,
                                  args=(origen,
@@ -305,6 +344,7 @@ class WindowCopyTo(tk.Toplevel):
                                  )
             showinfo(title="moviendo ...", message=f"moviendo {name} a {destino}")
         self.t.start()
+        self.t.join()
         self.donde_fue.set(os.path.join(destino, name))
         self.destroy()
         self.update()
@@ -321,6 +361,7 @@ class App(tk.Tk):
         # self.iconbitmap('collage.ico') # pathdir
         self.title('Main Window')
 
+
         # place a button on the root window
         ttk.Button(self,
                 text='Window copy to ...',
@@ -334,43 +375,56 @@ class App(tk.Tk):
                    text='Window rename file ...',
                    command=self.win_rn).pack(expand=True)
 
+        ttk.Button(self,
+                   text='Delete file ...',
+                   command=self.delete).pack(expand=True)
+
     def win_rn(self):
         """Action rename"""
-        window = OpenDialogRename(self)
-        window.file.set("E:\\Imagenes\\coronavirus.jfif")
-        window.name.set("Nevo nombre")
-        window.grab_set()
+        local = '/home/hernani/Vídeos/memoriaSwap/Ubuntu-particion-Swap.webp'
+        new_url = tk.StringVar(value='None')
+        url = tk.StringVar(value=local)
+        rname = tk.StringVar(value=f"New_{os.path.basename(local)}")
+        window = OpenDialogRename(self, url=url, rname=rname, new_url=new_url)
+        self.wait_window(window)
+        if os.path.exists(new_url.get()):
+            log.info(f"archivo renombrado: {new_url.get()}")
+            log.info(f"nuevo nombre: {rname.get()}")
 
     def win_cp(self):
         """Action copy file"""
-        donde_fue = tk.StringVar(value='mi copia')
+        # self.attributes('-disabled', 1)
+        local = '/home/hernani/Vídeos/memoriaSwap/Ubuntu-particion-Swap.webp'
+        new_url = tk.StringVar(value='Nada')
+        url =tk.StringVar(value=local)
+        org = tk.StringVar(value=os.path.dirname(local))
         option = {'width': 600, 'height': 120}
-        window = WindowCopyTo(self, donde_fue=donde_fue, **option)
-        # window.title('MOVER ...')
-        # window.copy = False
-        window.file.set("E:\\Imagenes\\coronavirus.jfif")
-        window.path_to_copy.set("E:\\")
-        window.wait_window(window.grab_set())
-        print(donde_fue.get())
+        window = WindowCopyTo(self, url=url, to_=org, new_url=new_url, **option)
+        
+        self.wait_window(window) # .grab_set())
+        
+        log.info('pass window process')
+        log.info(new_url.get())
 
     def win_mv(self):
         """Action move file"""
-        url = tk.StringVar()
-        window = WindowCopyTo(self, copy=False, donde_fue=url)
-        window.title('MOVER ...')
-        window.file.set("E:\\Imagenes\\coronavirus.jfif")
-        window.path_to_copy.set("E:\\")
+        local = '/home/hernani/Vídeos/memoriaSwap/Ubuntu-particion-Swap.webp'
+        new_url = tk.StringVar(value='None')
+        url =tk.StringVar(value=local)
+        org = tk.StringVar(value=os.path.dirname(local))
+        window = WindowCopyTo(self,url=url, to_=org, copy=False, new_url=new_url)
+        
         # window.grab_set()
-        self.wait_window(window.grab_set())
-        if os.path.exists(url.get()):
-            print(url.get())
+        self.wait_window(window)
+        if os.path.exists(new_url.get()):
+            log.info(new_url.get())
 
     def delete(self):
         """action delete or remove file"""
         from tkinter.messagebox import askyesno
-        url = "E:\\Imagenes\\coronavirus.jfif"
+        url = '/home/hernani/Vídeos/memoriaSwap/Ubuntu-particion-Swap.webp'
         if os.path.isfile(os.path.abspath(url)):
-            answer = askyesno(title='Confirmation',
+            answer = askyesno(parent=self, title='Confirmation',
                               message='Are you sure that you want to remove?')
             if answer:
                 ToolFile.remove(os.path.abspath(url))

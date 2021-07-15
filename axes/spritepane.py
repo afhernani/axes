@@ -46,7 +46,7 @@ class SpritePane(tk.Frame):
         self.height = kargs.get('height', 220)
         self.size =(self.width, self.height)
         # ----
-        if self.url.upper().endswith(('.MP4', '.AVI', '.FLV', '.GIF')):
+        if self.url.upper().endswith(('.MP4', '.AVI', '.FLV', '.GIF', '.MPG', '.TS', '.WEBM', '.MOV', '.MKV')):
             self.graphics = MyVideoCapture(self.url, thumb=(self.width, self.height))
         else:
             raise ValueError(f"Unable to open video source: {self.url}")
@@ -95,32 +95,28 @@ class SpritePane(tk.Frame):
         self.menu.tk_popup(event.x_root, event.y_root)
 
     def move(self):
-        logging.info(f'move video ->, {self.url}')
-        url = tk.StringVar()
+        logging.info(f'move ->, {self.url}')
+        new_url = tk.StringVar(value='None')
+        url = tk.StringVar(value=self.url)
+        to_ = tk.StringVar(value=os.path.dirname(self.url))
         if os.path.isfile(self.url):
-            window = WindowCopyTo(self, copy=False, donde_fue=url)
-            window.title('MOVER ...')
-    
-            window.file.set(self.url)
-            window.path_to_copy.set(os.path.dirname(self.url))
-            window.wait_window(window.grab_set())
+            window = WindowCopyTo(self, url=url, to_=to_,  copy=False, new_url=new_url)
+            self.parent.wait_window(window)
 
-            if os.path.exists(url.get()):
-                self.url = url.get()
-                logging.info(f'file move to: {url.get()}')
+            if os.path.exists(new_url.get()):
+                self.url = new_url.get()
+                logging.info(f'file move to: {new_url.get()}')
 
     def copy(self):
-        logging.info(f'copy video ->, {self.url}')
-        url = tk.StringVar()
+        logging.info(f'copy ->, {self.url}')
+        new_url = tk.StringVar(value='None')
+        url = tk.StringVar(value=self.url)
+        to_ = tk.StringVar(value=os.path.dirname(self.url))
         if os.path.isfile(self.url):
             option = {'width': 600, 'height': 120}
-            window = WindowCopyTo(self, donde_fue=url, **option)
-            # window.title('MOVER ...')
-            # window.copy = False
-            window.file.set(self.url)
-            window.path_to_copy.set(os.path.dirname(self.url))
-            window.wait_window(window=window.grab_set())
-            if os.path.exists(url.get()):
+            window = WindowCopyTo(self, url=url, to_=to_, new_url=new_url, **option)
+            self.parent.wait_window(window=window)
+            if os.path.exists(new_url.get()):
                 logging.info(f"to: {url.get()}")
 
     def remove(self):
@@ -128,23 +124,24 @@ class SpritePane(tk.Frame):
         from tkinter.messagebox import askyesno
         print('video ->', self.url)
         if os.path.isfile(self.url):
-            answer = askyesno(title='Confirmation',
+            answer = askyesno(parent=self.parent, title='Confirmation',
                               message='Are you sure that you want to remove?')
             if answer:
                 ToolFile.remove(self.url)
                 self.destroy()
 
     def rename(self):
-        logging.info(f"rename video -> {self.url}")
-        url = tk.StringVar()
+        """Rename the url"""
+        logging.info(f"rename -> {self.url}")
+        new_url = tk.StringVar(value='None')
+        url = tk.StringVar(value=self.url)
+        rname = tk.StringVar(value=f"New-{os.path.basename(self.url)}")
         if os.path.isfile(self.url):
-            window = OpenDialogRename(self, url=url)
-            window.file.set(self.url)
-            window.name.set("New-" + os.path.basename(self.url))
-            window.wait_window(window.grab_set())
+            window = OpenDialogRename(self, url=url, rname=rname, new_url=new_url)
+            self.parent.wait_window(window)
             # TODO: al cambiar el nombre, modificar self.url base.
-            if os.path.exists(url.get()):
-                self.url = url.get()
+            if os.path.exists(new_url.get()):
+                self.url = new_url.get()
                 logging.info(f"renombrado a: {self.url}")
         
     def animate(self):

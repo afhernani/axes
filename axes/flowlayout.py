@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding:UTF-8 -*-
 import tkinter as tk
-import os, sys
+import os, sys, time
 import threading
 try:
     from .spritepane import SpritePane
@@ -26,7 +26,7 @@ log = logging.getLogger('flowlayou')
 
 extvd = ('.mp4', '.flv', '.avi', '.mpg', '.mkv', 
          '.webm', '.ts', '.mov', '.MP4', '.FLV',
-         '.MPG', '.AVI', '.MKV', 'WEBM', '.MOV',
+         '.MPG', '.AVI', '.MKV', '.WEBM', '.MOV',
          '.TS')
         
 extim = ('.jpeg', '.jpg', '.png', '.gif')
@@ -115,6 +115,7 @@ class Flowlayout(tk.Frame):
                     fex = os.path.abspath(os.path.join(self.dirpathmovies.get(), fe))
                     log.info(fex)
                     self.textwidget.window_create(tk.INSERT, window=self.load_sprite(arg=fex))
+                    time.sleep(0.05) # give some time to load
     
     @staticmethod
     def restart_program():
