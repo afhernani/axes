@@ -16,15 +16,63 @@ import logging
 __author__ = 'Hernani Aleman Ferraz'
 __email__ = 'afhernani@gmail.com'
 __apply__ = 'GUI tk - Custom File widgets'
-__version__ = '1.1.5'
+__version__ = '1.1.6'
 
 __all__ = ('LabelEntryButton', 'FrameButtons',
            'WindowCopyTo', 'CustomEntry',
-           'OpenDialogRename', 'ToolFile')
+           'OpenDialogRename', 'ToolFile','Progressthreadwin')
 
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('windialog')
+
+
+class Progressthreadwin(tk.Toplevel):
+
+    def __init__(self, parent, **options):
+        super().__init__(parent, **options)
+        self.parent = parent
+        self.grab_set()
+        x, y, _cx, cy = self.parent.bbox("insert")
+        x = x + self.parent.winfo_rootx() + 27
+        y = y + cy + self.parent.winfo_rooty() + 27
+        self.grid()
+        self.geometry('400x60')
+        self.wm_overrideredirect(1)
+        self.wm_geometry("+%d+%d" % (x, y))
+        # self.iconbitmap('collage.ico')  # pathdir
+        # if "nt" == os.name:
+        #    self.wm_iconbitmap(bitmap="collage.ico")
+        # else:
+        #    self.wm_iconbitmap(bitmap="@collage.xbm")
+        # self.title('PROGRESS ...')
+        # self.wm_transient(parent)  # desiconizable
+
+        # progressbar
+        self.pb = ttk.Progressbar(self, orient='horizontal',
+                                  mode='determinate', length=380)
+        # place the progressbar
+        self.pb.grid(column=0, row=0, columnspan=2, padx=10, pady=20)
+
+    def assing_thread(self, target, args):
+        self.foo_thread = threading.Thread(target=target, args=args)
+
+    def start(self):
+        if hasattr(self, 'foo_thread'):
+            self.foo_thread.daemon = True
+            self.pb.start()
+            self.foo_thread.start()
+            self.after(20, self.check_foo_thread)
+        else:
+            print('No se ha asignado la tarea')
+
+    def check_foo_thread(self):
+        if self.foo_thread.is_alive():
+            self.after(20, self.check_foo_thread)
+        else:
+            self.pb.stop()
+            self.destroy()
+
 
 class ToolFile(object):
     def __init__(self, widget):
@@ -211,18 +259,14 @@ class OpenDialogRename(tk.Toplevel):
             return
         
         self.withdraw()
+        operating = Progressthreadwin(parent=self)
+        args = (origen, destino, )
         if oldname != name:
-            self.t = threading.Thread(target=ToolFile.move,
-                                 args=(origen,
-                                       destino,
-                                       )
-                                 )
-            showinfo(title="Renombrando ...", message=f"renombrando {origen} a {destino}")
-            self.t.start()
-            self.t.join()
+            operating.assing_thread(target=ToolFile.move, args=args)
+            operating.start()
+            self.wait_window(window=operating)
             self.new_url.set(destino)
-        self.destroy()
-        self.update()
+        self.handlefocus()
 
     def cancelar_click(self):
         self.destroy()
@@ -304,9 +348,6 @@ class WindowCopyTo(tk.Toplevel):
             initialdir=initialdir,
             filetypes=filetypes)
         if filename:
-            showinfo(title='Selected File',
-                    message=filename
-                    )
             self.file.set(filename)
 
     def select_directorio(self):
@@ -329,25 +370,16 @@ class WindowCopyTo(tk.Toplevel):
             self.select_directorio()
             return
         self.withdraw()
+        operating = Progressthreadwin(parent=self)
+        args = (origen, destino, )
         if self.copy:
-            self.t = threading.Thread(target=ToolFile.copy,
-                                 args=(origen,
-                                       destino,
-                                       )
-                                 )
-            showinfo(title="copiando ...", message=f"copiando {name} a {destino}")
+            operating.assing_thread(target=ToolFile.copy, args=args)
         else:
-            self.t = threading.Thread(target=ToolFile.move,
-                                 args=(origen,
-                                       destino,
-                                       )
-                                 )
-            showinfo(title="moviendo ...", message=f"moviendo {name} a {destino}")
-        self.t.start()
-        self.t.join()
+            operating.assing_thread(target=ToolFile.move, args=args)
+        operating.start()
+        self.wait_window(window=operating)
         self.donde_fue.set(os.path.join(destino, name))
-        self.destroy()
-        self.update()
+        self.handlefocus()
 
     def cancelar_click(self):
         self.destroy()
