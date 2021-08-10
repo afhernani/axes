@@ -86,9 +86,21 @@ class SpritePane(tk.Frame):
         self.canvas.bind('<Enter>', self.enter)
         self.canvas.bind('<Leave>', self.leave)
         self.canvas.bind('<Double-Button-1>', self.double_click_canvas)
-        self.canvas.bind('<Button-3>', self.my_popup) # make menu
+        self.canvas.bind('<Button-3>', self.my_popup) # make 
+        self.canvas.bind('<Button-1>', self.click_frame)
+        self.bind('<KeyPress>', self.keypress)
         self.animating = True
         # self.animate(0)
+    
+    def keypress(self, event):
+        if event.keysym == 'Right':
+            logging.info(f'right: ---> {os.path.basename(self.url)}')
+        elif event.keysym == 'Left':
+            logging.info(f'Left: <--- {os.path.basename(self.url)}')
+
+    def click_frame(self, event):
+        logging.info(f'Click_frame: {event.widget}, url: {self.url}')
+        self.focus_set()
 
     # actuaciones de menu
     def my_popup(self, event):
