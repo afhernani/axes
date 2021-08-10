@@ -94,9 +94,11 @@ class SpritePane(tk.Frame):
     
     def keypress(self, event):
         if event.keysym == 'Right':
-            logging.info(f'right: ---> {os.path.basename(self.url)}')
+            #logging.info(f'right: ---> {os.path.basename(self.url)}')
+            self.graphics.set_poss(self.f_way+10)
         elif event.keysym == 'Left':
-            logging.info(f'Left: <--- {os.path.basename(self.url)}')
+            #logging.info(f'Left: <--- {os.path.basename(self.url)}')
+            self.graphics.set_poss(self.f_way-10)
 
     def click_frame(self, event):
         logging.info(f'Click_frame: {event.widget}, url: {self.url}')
