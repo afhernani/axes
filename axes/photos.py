@@ -26,6 +26,9 @@ def resource_path(relative_path):
 
 class Photos():
     def __init__(self):
+        self._hacha = tk.PhotoImage(file=resource_path('Images/hacha_icon_64px.png'))
+        self._spider_scary = tk.PhotoImage(file=resource_path('Images/scary_spider_128px.png'))
+        self._infection = tk.PhotoImage(file=resource_path('Images/infection_malware_256px.png'))
         self._apply = tk.PhotoImage(file=resource_path('Images/pirate.png'))
         self._copy = tk.PhotoImage(file=resource_path('Images/copy.png'))
         self._delete = tk.PhotoImage(file=resource_path('Images/delete.png'))
