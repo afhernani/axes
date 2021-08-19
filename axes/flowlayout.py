@@ -67,9 +67,19 @@ class Flowlayout(tk.Frame):
         self.bind_all("<MouseWheel>", self.mouse_scroll)
         self.bind_all("<Button-4>", self.mouse_scroll)
         self.bind_all("<Button-5>", self.mouse_scroll)
+        self.parent.bind('<KeyPress>', self.keypress)
         self.thread_load_files()
         self.sprite_list = []
 
+    def about_app(self):
+        pass
+
+    def keypress(self, event):
+        if event.keysym == 'i':
+            logging.info(f'i: --->')
+        elif event.keysym == 'x':
+            logging.info(f'x: --->')
+    
     def get_init_status(self):
         '''
         extract init status of app
