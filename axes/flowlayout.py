@@ -1,12 +1,15 @@
 #! /usr/bin/env python3
 # -*- coding:UTF-8 -*-
+from axes.photos import Photos
 import tkinter as tk
 import os, sys, time
 import threading
 try:
     from .spritepane import SpritePane
+    from .photos import Photos
 except ImportError:
     from spritepane import SpritePane
+    from photos import Photos
 from tkinter import filedialog, messagebox
 import configparser
 from tkinter import ttk
@@ -72,11 +75,34 @@ class Flowlayout(tk.Frame):
         self.sprite_list = []
 
     def about_app(self):
-        pass
+        t = tk.Toplevel(self.parent)
+        t.title("AXE APP")
+        t.geometry('300x400+100+120')
+        t.focus_set()
+        t.grab_set()
+        t.transient(master=self.parent)
+        text = """
+        AXE VIEW APP
+
+author  : Hernani Aleman Ferraz
+email   : afhernani@gmail.com
+apply   : GUI tk - ToolTip widget
+version : 2.0
+
+"""
+        lbl = tk.Label(t, text=text)
+        lbl.pack(padx=10, pady=10)
+        ph_ico = Photos()
+        lbimg = tk.Label(t, image=ph_ico._spider_scary)
+        lbimg.pack(padx=10, pady=10)
+        btn = tk.Button(t, text="Aceptar", bg='green', command=t.destroy)
+        btn.pack(side=tk.BOTTOM, padx=10, pady=10)
+        t.wait_window(t)
 
     def keypress(self, event):
         if event.keysym == 'i':
-            logging.info(f'i: --->')
+            logging.info(f'information: --->')
+            self.about_app()
         elif event.keysym == 'x':
             logging.info(f'x: --->')
     
