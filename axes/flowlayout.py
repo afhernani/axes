@@ -146,7 +146,9 @@ version : 2.0
 
     def load_from_file(self):
         if os.path.exists(self.dirpathmovies.get()):
-            for fe in os.listdir(self.dirpathmovies.get()):
+            lista = os.listdir(self.dirpathmovies.get())
+            lista.sort()
+            for fe in lista:
                 if fe.endswith(extvd):
                     fex = os.path.abspath(os.path.join(self.dirpathmovies.get(), fe))
                     log.info(fex)
