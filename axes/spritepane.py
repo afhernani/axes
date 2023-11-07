@@ -215,9 +215,9 @@ class SpritePane(tk.Frame):
 if __name__ == '__main__':
     root = tk.Tk()
     root.geometry("400x800")
-    app = SpritePane(root, url='_Work/056af27151ecf1e2ab70fe3afbca6952.mp4', timer=21)
+    app = SpritePane(root, url='./_Work/rename.avi', timer=21)
     app.pack()
-    SpritePane(root, url='_Work/912350defdcb670ce38c84681c553a33.mp4').pack()
-    SpritePane(root, url='_Work/cb696a4ddc356cb2ddad62f57f586bac.mp4').pack()
+    # SpritePane(root, url='_Work/912350defdcb670ce38c84681c553a33.mp4').pack()
+    # SpritePane(root, url='_Work/cb696a4ddc356cb2ddad62f57f586bac.mp4').pack()
 
     root.mainloop()

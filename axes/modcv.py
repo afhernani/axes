@@ -274,4 +274,4 @@ class App:
 
 if __name__ == '__main__':
     # Create a window and pass it to the Application object
-    App(tk.Tk(), "Tkinter and OpenCV", "../_Work/c0c0c9676c2a54230ecb8f894942ad07.mp4")
+    App(tk.Tk(), "Tkinter and OpenCV", "../_Work/023Nf32.avi")
