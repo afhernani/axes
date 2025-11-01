@@ -29,6 +29,7 @@ $ ./flowlayout.py
 
 - Tambien:
 	+ tkinter GUI python3
-	+ ffpyplayer
-	+ PIL
-	+ OpenCV
+	+ pip install imageio (imageio)
+	+ pip install ffpyplayer (ffpyplayer)
+	+ pip install pillow (PIL)
+	+ pip install opencv-python (OpenCV)
