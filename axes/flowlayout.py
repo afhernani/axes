@@ -92,16 +92,27 @@ class Flowlayout(tk.Frame):
         self.canvas.bind("<Button-5>", self.mouse_scroll)
         self.parent.bind('<KeyPress>', self.keypress)
 
+        self._layout_ready = False
+        self._pending_load = False
         self.load_files()
 
 
     def on_canvas_configure(self, event):
         '''Se dispara cuando el canvas cambia de tamaño (ej: redimensionar ventana)'''
         self.canvas.itemconfig(self.canvas_window, width=event.width)
-        self.after(70, self.recalculate_layout)
+        if not self._layout_ready:
+            # Primera vez: esperar a que todo esté listo
+            self._layout_ready = True
+            if self._pending_load:
+                self._pending_load = False
+                self.after(50, self._finalize_layout)
+        else:
+            # Redimensionamiento normal
+            self.after(70, self.recalculate_layout)
+
 
     def _destroy_all_widgets(self):
-        """Destruye todos los SpritePane cargados"""
+        """Destruye todos los SpritePane cargados y limpia la lista de archivos all_files y loaded_widgets."""
         for idx, widget in list(self.loaded_widgets.items()):
             try:
                 widget.destroy()
@@ -118,42 +129,46 @@ class Flowlayout(tk.Frame):
         '''Actualiza el scrollregion cuando el frame interno cambia'''
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
+
     def recalculate_layout(self):
-        '''Recalcula columnas y redistribuye - MANTIENE SCROLL TOTAL'''
+        '''Solo para redimensionamientos de ventana'''
+        if not self._layout_ready or not self.all_files:
+            return
+            
         canvas_width = self.canvas.winfo_width()
         if canvas_width < 10:
             return
         
         new_num_columns = max(1, canvas_width // (self.split_width + self.padding_x))
         
-        if new_num_columns != self.num_columns:
-            log.info(f"Recalculando: {self.num_columns} -> {new_num_columns} columnas")
-            self.num_columns = new_num_columns
-            
-            # Destruir todos los widgets (cambió la disposición)
-            for idx, widget in list(self.loaded_widgets.items()):
-                try:
-                    widget.destroy()
-                except:
-                    pass
-            self.loaded_widgets.clear()
-            
-            # Recalcular altura TOTAL
-            total_rows = (len(self.all_files) + self.num_columns - 1) // self.num_columns
-            new_height = total_rows * self.row_height
-            self.inner_frame.configure(height=new_height, width=canvas_width)
-            
-            # Scrollregion TOTAL (no dinámico)
-            self.canvas.configure(scrollregion=(0, 0, canvas_width, new_height))
-            
-            # Recargar ventana deslizante
-            self.after(50, self.update_visible_items)
+        if new_num_columns == self.num_columns:
+            return  # Nada cambió
+        
+        log.info(f"Recalculando: {self.num_columns} -> {new_num_columns} columnas")
+        self.num_columns = new_num_columns
+        
+        # Destruir widgets actuales
+        for idx, widget in list(self.loaded_widgets.items()):
+            try:
+                widget.destroy()
+            except:
+                pass
+        self.loaded_widgets.clear()
+        
+        total_rows = (len(self.all_files) + self.num_columns - 1) // self.num_columns
+        new_height = total_rows * self.row_height
+        self.inner_frame.configure(height=new_height, width=canvas_width)
+        self.canvas.configure(scrollregion=(0, 0, canvas_width, new_height))
+        
+        self.after(50, self.update_visible_items)
     
+
     def _schedule_update(self):
         """Programa la actualización de los elementos visibles con debounce"""
         if self._update_timer_id is not None:
             self.after_cancel(self._update_timer_id)
         self._update_timer_id = self.after(100, self.update_visible_items)
+
 
     def update_visible_items(self, event=None):
         '''Carga los SpritePane visibles - VENTANA DESLIZANTE con buffer'''
@@ -182,6 +197,7 @@ class Flowlayout(tk.Frame):
 
         # 4. Destruir widgets que salieron de la vista
         to_remove = current_indices - visible_indices
+        log.debug(f"Indices a remover: {sorted(to_remove)}")
         for idx in sorted(to_remove, reverse=True):
             try:
                 widget = self.loaded_widgets.pop(idx)
@@ -192,6 +208,7 @@ class Flowlayout(tk.Frame):
 
         # 5. Crear widgets que entraron en la vista
         to_add = visible_indices - current_indices
+        log.debug(f"Indices a agregar: {sorted(to_add)}")
         for idx in sorted(to_add):
             if idx >= len(self.all_files):
                 continue
@@ -217,6 +234,7 @@ class Flowlayout(tk.Frame):
         self.parent.title(f'gifview :: {start_idx}-{min(end_idx-1, len(self.all_files)-1)} '
                         f'de {len(self.all_files)} ({visible_count} activos)')
 
+
     def mouse_scroll(self, event):
         '''Scroll con ventana deslizante y debounce'''
         if event.delta:
@@ -241,7 +259,7 @@ class Flowlayout(tk.Frame):
         log.info("load_files: Escaneando directorio...")
         self.status_v.set("Escaneando archivos...")
         
-        # Limpiar los spritepane anteriores de forma segura.
+        # Limpiar los spritepane y vacia la lista de archivos anteriores de forma segura.
         self._destroy_all_widgets()
 
         dir_path = self.dirpathmovies.get()
@@ -257,36 +275,42 @@ class Flowlayout(tk.Frame):
         self.after(0, self.on_scan_complete)
 
     def on_scan_complete(self):
-        """Configuración inicial post-escaneo - CALCULAR SCROLL TOTAL"""
-        log.info("on_scan_complete: Configurando layout y scroll total...")
+        """Post-escaneo: solo prepara datos, NO crea widgets"""
+        log.info("on_scan_complete: Archivos listos, esperando layout...")
         self.status_v.set(f"Listo: {len(self.all_files)} archivos en memoria")
         
-        # Calcular columnas iniciales
+        # Marcar que hay archivos pendientes de mostrar
+        self._pending_load = True
+        
+        # Si el layout ya está listo (cambio de directorio), finalizar inmediatamente
+        if self._layout_ready:
+            self.after(10, self._finalize_layout)
+        # Si no está listo, on_canvas_configure lo hará cuando se dispare
+
+
+    def _finalize_layout(self):
+        """Calcula layout y carga widgets UNA SOLA VEZ"""
+        # Forzar actualización de geometría
+        self.update_idletasks()
+        
         canvas_width = self.canvas.winfo_width()
+        if canvas_width < 10:
+            # Canvas aún no tiene tamaño, reintentar
+            self.after(50, self._finalize_layout)
+            return
+        
         self.num_columns = max(1, canvas_width // (self.split_width + self.padding_x))
         
-        # Calcular altura TOTAL basada en TODOS los archivos
         total_rows = (len(self.all_files) + self.num_columns - 1) // self.num_columns
         total_height = total_rows * self.row_height
         
-        # Configurar frame interno
         self.inner_frame.configure(height=total_height, width=canvas_width)
-        
-        # IMPORTANTE: Scrollregion FIJO basado en el total de archivos
         self.canvas.configure(scrollregion=(0, 0, canvas_width, total_height))
         
-        # Cargar primera ventana deslizante
-        self.after(100, self.update_visible_items)
+        # Cargar ventana deslizante (una sola vez)
+        self.update_visible_items()
 
-
-    def get_top_visible_index(self):
-        """Reemplaza a self.textwidget.index(tk.INSERT) para saber qué se ve"""
-        # Obtiene la coordenada Y superior visible en el canvas
-        top_y = self.canvas.canvasy(0)
-        # Calcula el índice basado en la altura de cada item
-        return max(0, int(top_y // self.item_height))
-
-
+    
     def load_sprite(self, arg):
         """Método legacy (ya no se usa pero se mantiene por compatibilidad)"""
         if not os.path.isfile(arg):
@@ -314,9 +338,11 @@ class Flowlayout(tk.Frame):
             self.parent.quit()
         log.info('end process')
 
+
     def keypress(self, event):
         if event.keysym == 'i':
             self.about_app()
+
 
     def about_app(self):
         t = tk.Toplevel(self.parent)
@@ -337,6 +363,7 @@ class Flowlayout(tk.Frame):
         btn.pack(side=tk.BOTTOM, padx=10, pady=10)
         t.wait_window(t)
 
+
     def get_init_status(self):
         if not os.path.exists(self.setingfile):
             return
@@ -355,6 +382,7 @@ class Flowlayout(tk.Frame):
         except configparser.NoOptionError as e:
             log.warning(str(e.args))
 
+
     def set_init_status(self):
         config = configparser.RawConfigParser()
         config.add_section('Setings')
@@ -364,6 +392,7 @@ class Flowlayout(tk.Frame):
         with open(self.setingfile, 'w') as configfile:
             config.write(configfile)
         log.info('Write config file')
+
 
     @staticmethod
     def restart_program():
@@ -379,6 +408,7 @@ class Flowlayout(tk.Frame):
         python = sys.executable
         log.warning(f"executable: {python}")
         os.execl(python, python, *sys.argv)
+
 
 def main():
     root = tk.Tk()
