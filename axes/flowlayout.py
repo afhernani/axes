@@ -99,6 +99,7 @@ class Flowlayout(tk.Frame):
 
     def on_canvas_configure(self, event):
         '''Se dispara cuando el canvas cambia de tamaño (ej: redimensionar ventana)'''
+        log.info(f"on_canvas_configure: Canvas redimensionado a {event.width}x{event.height}")
         self.canvas.itemconfig(self.canvas_window, width=event.width)
         if not self._layout_ready:
             # Primera vez: esperar a que todo esté listo
@@ -113,6 +114,7 @@ class Flowlayout(tk.Frame):
 
     def _destroy_all_widgets(self):
         """Destruye todos los SpritePane cargados y limpia la lista de archivos all_files y loaded_widgets."""
+        log.info("_destroy_all_widgets ...")
         for idx, widget in list(self.loaded_widgets.items()):
             try:
                 widget.destroy()
@@ -127,11 +129,13 @@ class Flowlayout(tk.Frame):
 
     def on_frame_configure(self, event):
         '''Actualiza el scrollregion cuando el frame interno cambia'''
+        log.info("on_frame_configure: Actualizando scrollregion...")
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
 
     def recalculate_layout(self):
         '''Solo para redimensionamientos de ventana'''
+        log.info("recalculate_layout: Recalculando diseño...")
         if not self._layout_ready or not self.all_files:
             return
             
@@ -165,6 +169,7 @@ class Flowlayout(tk.Frame):
 
     def _schedule_update(self):
         """Programa la actualización de los elementos visibles con debounce"""
+        log.info("_schedule_update llamado...")
         if self._update_timer_id is not None:
             self.after_cancel(self._update_timer_id)
         self._update_timer_id = self.after(100, self.update_visible_items)
@@ -172,6 +177,7 @@ class Flowlayout(tk.Frame):
 
     def update_visible_items(self, event=None):
         '''Carga los SpritePane visibles - VENTANA DESLIZANTE con buffer'''
+        log.info("update_visible_items: Actualizando elementos visibles...")
         self._update_scheduled = False
         
         if not self.all_files or self.num_columns < 1:
@@ -237,6 +243,7 @@ class Flowlayout(tk.Frame):
 
     def mouse_scroll(self, event):
         '''Scroll con ventana deslizante y debounce'''
+        log.info("mouse_scroll: Scroll detectado...")
         if event.delta:
             units = int(-1 * (event.delta / 120))
         else:
@@ -290,6 +297,7 @@ class Flowlayout(tk.Frame):
 
     def _finalize_layout(self):
         """Calcula layout y carga widgets UNA SOLA VEZ"""
+        log.info("_finalize_layout: Finalizando diseño...")
         # Forzar actualización de geometría
         self.update_idletasks()
         
@@ -313,8 +321,9 @@ class Flowlayout(tk.Frame):
     
     def load_sprite(self, arg):
         """Método legacy (ya no se usa pero se mantiene por compatibilidad)"""
+        log.info("load_sprite: Cargando sprite...")
         if not os.path.isfile(arg):
-            log.warning("is not a file")
+            log.warning("load_sprite: La ruta no apunta a un archivo válido")
         index = len(self.loaded_widgets)
         self.parent.title(f'gifview :: {index + 1}')
         options = {'width': self.split_width, 'height': self.split_height}
@@ -323,7 +332,7 @@ class Flowlayout(tk.Frame):
 
 
     def search_directory(self):
-        log.info('search directory instruction')
+        log.info('search_directory: Iniciando búsqueda de directorio')
         self.status_v.set('Selecciona directorio...')
         dirname = filedialog.askdirectory(initialdir=self.dirpathmovies.get(), title="Select directory")
         if not dirname=="":
@@ -333,6 +342,8 @@ class Flowlayout(tk.Frame):
             self.load_files()
 
     def confirmExit(self):
+        '''Confirmar salida de la aplicación'''
+        log.info('confirmExit: Confirmando salida...')
         if messagebox.askokcancel('Quit', 'Are you sure you want to exit?'):
             self.set_init_status()
             self.parent.quit()
@@ -345,6 +356,7 @@ class Flowlayout(tk.Frame):
 
 
     def about_app(self):
+        log.info("about_app: Mostrando información de la aplicación...")
         t = tk.Toplevel(self.parent)
         t.title("AXE APP")
         t.geometry('300x400+100+120')
@@ -365,6 +377,9 @@ class Flowlayout(tk.Frame):
 
 
     def get_init_status(self):
+        '''Lee el archivo de configuración y establece el estado inicial de la aplicación.
+        Si el archivo no existe, se mantiene el estado por defecto.'''
+        log.info("get_init_status: Cargando estado inicial...")
         if not os.path.exists(self.setingfile):
             return
         config = configparser.RawConfigParser()
@@ -384,6 +399,8 @@ class Flowlayout(tk.Frame):
 
 
     def set_init_status(self):
+        '''Escribe el estado actual de la aplicación en el archivo de configuración.'''
+        log.info("set_init_status: Configurando estado inicial...")
         config = configparser.RawConfigParser()
         config.add_section('Setings')
         config.set('Setings', 'dirpathmovies', self.dirpathmovies.get())
@@ -397,6 +414,7 @@ class Flowlayout(tk.Frame):
     @staticmethod
     def restart_program():
         """Restarts the current program, with file objects and descriptors cleanup"""
+        log.info("restart_program: Reiniciando programa...")
         try:
             p = psutil.Process(os.getpid())
             log.warning(f"id: {os.getpid()}")
