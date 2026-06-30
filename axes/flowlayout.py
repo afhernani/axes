@@ -1,15 +1,14 @@
 #! /usr/bin/env python3
 # -*- coding:UTF-8 -*-
-from axes.photos import Photos
 import tkinter as tk
 import os, sys, time
 import threading
 try:
     from .spritepane import SpritePane
-    from .photos import Photos
+    from .photos import Photos, resource_path
 except ImportError:
     from spritepane import SpritePane
-    from photos import Photos
+    from photos import Photos, resource_path
 from tkinter import filedialog, messagebox
 import configparser
 from tkinter import ttk
@@ -49,7 +48,16 @@ class Flowlayout(tk.Frame):
         dirpath = os.path.abspath(os.path.split(os.path.abspath(__file__))[0])
         log.info(f"Directorio de trabajo: {dirpath}")
         self.dirpathmovies = tk.StringVar(value=dirpath)
-        self.setingfile = 'seting.ini'
+        # CORREGIDO: Calcular ruta de seting.ini de forma segura
+        if getattr(sys, 'frozen', False):
+            # Si está compilado con PyInstaller, usar la carpeta del .exe
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            # Si está en desarrollo, usar la carpeta del script principal
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            
+        self.setingfile = os.path.join(base_dir, 'config.ini')       
+        # self.setingfile = 'seting.ini'
         self.get_init_status()
 
         # --- Canvas + Frame para virtualización ---
@@ -431,7 +439,7 @@ class Flowlayout(tk.Frame):
 def main():
     root = tk.Tk()
     root.geometry("945x650+100+100")
-    root.iconphoto(True, tk.PhotoImage(file='appel.png'))
+    root.iconphoto(True, tk.PhotoImage(file=resource_path('assets\\text_log_32x32.png')))
     app = Flowlayout(parent=root)
     app.mainloop()
 
