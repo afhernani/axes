@@ -26,12 +26,12 @@ __all__ = ('Flowlayout')
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('flowlayou')
 
-extvd = ('.mp4', '.flv', '.avi', '.mpg', '.mkv', 
+EXTVD = ('.mp4', '.flv', '.avi', '.mpg', '.mkv', 
          '.webm', '.ts', '.mov', '.MP4', '.FLV',
          '.MPG', '.AVI', '.MKV', '.WEBM', '.MOV',
          '.TS')
         
-extim = ('.jpeg', '.jpg', '.png', '.gif')
+EXTIM = ('.jpeg', '.jpg', '.png', '.gif')
 
 
 class Flowlayout(tk.Frame):
@@ -282,7 +282,7 @@ class Flowlayout(tk.Frame):
             lista = os.listdir(dir_path)
             lista.sort()
             for fe in lista:
-                if fe.lower().endswith(extvd):
+                if fe.lower().endswith(EXTVD + EXTIM):
                     fex = os.path.abspath(os.path.join(dir_path, fe))
                     self.all_files.append(fex)
 

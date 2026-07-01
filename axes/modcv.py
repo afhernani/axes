@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class MyVideoCapture:
-    
+    """Captura de video con OpenCV, para usar en Tkinter. """
     vid = None
     
     def __init__(self, video_source=None, thumb=None):
