@@ -159,16 +159,29 @@ class MyVideoCapture:
         logging.info(f"Guardando archivo GIF: {namefile}")
         if not namefile.lower().endswith('.gif'):
             namefile += '_nfx_.gif'
+        #  Convertimos todos los frames a PIL Image
+        pil_frames = []
+        for frame in self.frames:
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            pil_img = Image.fromarray(rgb_frame)
+            pil_frames.append(pil_img)
         
-        with imageio.get_writer(namefile, mode="I",duration=duration) as writer:
-            for idx, frame in enumerate(self.frames):
-                logging.info(f"Adding frame to GIF file:  {idx + 1}")
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                writer.append_data(rgb_frame)
-
-        logging.info(f"Archivo GIF guardado exitosamente: {namefile}")
-
+        # PIL usa MILISEGUNDOS para la duración
+        duration_ms = int(duration * 1000)
         
+        # Guardamos el GIF con Pillow directamente
+        pil_frames[0].save(
+            namefile,
+            save_all=True,
+            append_images=pil_frames[1:],
+            duration=duration_ms,  # MILISEGUNDOS por frame
+            loop=0                 # Bucle infinito
+        )
+        
+        logging.info(f"GIF guardado: {namefile} con {len(pil_frames)} frames, "
+                    f"duración por frame: {duration_ms}ms por frame")
+
+
     def __get_frames_from_video(self, nft=20):
         """Extrae n frames del video y los guarda en la lista self.frames."""
         rate_sec = round((self.seconds / (nft + 1)), 3)
@@ -251,6 +264,13 @@ class App:
         self.delay = max(1, int(1000 / self.vid.fps))
         logging.info(f"Video FPS: {self.vid.fps}, Calculated delay: {self.delay}ms")
 
+        # Añade esto al final del __init__:
+        self.gif_thread = None
+        self.is_generating_gif = False
+        self.status_var = tk.StringVar(value="Listo")
+        self.status_label = tk.Label(self.frame, textvariable=self.status_var, fg="gray")
+        self.status_label.pack(side=tk.RIGHT, padx=10)
+
         self.update()
         self.window.mainloop()
     
@@ -270,18 +290,69 @@ class App:
         ret, frame = self.vid.get_frame()
 
         if ret:
-            cv2.imwrite("frame-" + time.strftime("%d-%m-%Y-%H-%M-%S") + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+            cv2.imwrite("frame-" + time.strftime("%d-%m-%Y-%H-%M-%S") 
+                        + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
     def stopshow(self):
         if self.btn_stop['text'] == 'II':
-            self.btn_stop['text'] = '>>'
+            self.btn_stop['text'] = '>'
             self.stop=True
-        elif self.btn_stop['text'] == '>>':
+        elif self.btn_stop['text'] == '>':
             self.btn_stop['text'] = 'II'
             self.stop=False
             self.window.after(self.delay, self.update)
 
     def gifshow(self):
+        if  self.is_generating_gif:
+            return # Evita clicks multiples
+        
+        self.is_generating_gif = True
+        self.status_var.set("Generando GIF...")
+        # Pausamos la reproduccion para liberar cv2.VideoCapture
+        self.btn_stop['text'] = '>'
+        self.stop=True
+        self.btn_gif.config(state=tk.DISABLED)
+
+        # Creamos y arrancamos el hilo en segundo plano.
+        self.gif_thread = threading.Thread(target=self._generate_gif_worker, daemon=True)
+        self.gif_thread.start()
+        '''
+        self.status_var.set("Generando GIF...")
+        self.gif_thread = threading.Thread(target=self._generate_gif)
+        self.gif_thread.start()
+        '''
+
+    def _generate_gif_worker(self):
+        """Se ejecuta en el hilo secundario."""
+        try:
+            self.vid.save_gif_file(namefile=self.video_source)
+            # Programamos la actualización en el hilo principal
+            self.window.after(0, lambda: self._on_gif_finished(success=True))
+        except Exception as e:
+            error_msg = str(e)
+            logging.error(f"Error creando GIF: {error_msg}")
+            self.window.after(0, lambda: self._on_gif_finished(success=False, error=error_msg))
+
+    def _on_gif_finished(self, success, error=None):
+        """Se ejecuta en el hilo principal (GUI)."""
+        self.is_generating_gif = False
+        self.btn_gif.config(state=tk.NORMAL)
+        
+        if success:
+            self.status_var.set("GIF creado")
+            # showinfo("Éxito", "El archivo GIF se ha guardado correctamente.")
+        else:
+            self.status_var.set("Error al crear GIF")
+            showerror("Error", f"No se pudo crear el GIF:\n{error}")
+            
+        # Reanudamos la reproducción automáticamente
+        # Cambiamos el estado de pausa/reproducción
+        self.btn_stop['text'] = 'II'
+        self.stop=False
+        self.window.after(self.delay, self.update)
+
+
+    def _generate_gif(self):
         self.vid.save_gif_file(namefile=self.video_source)
 
     def openshow(self):
