@@ -154,12 +154,15 @@ class App:
         self.stop = False
         self.v_time = tk.DoubleVar()
         self.all_time = tk.DoubleVar()
+
         # open video source (by default this will try to open the computer webcam)
         self.vid = MyVideoCapture(self.video_source)
-        self.vid.set_only_video()
+
+        # self.vid.set_only_video()
         if not self.vid.vid.isOpened():
             showerror(title="Aviso", message=f"No se pudo abrir la fuente {self.video_source}")
             exit(0)
+        
         # Create a canvas that can fit the above video source size
         self.all_time.set(self.vid.seconds)
         self.canvas = tk.Canvas(window, width = self.vid.width, height = self.vid.height)
@@ -203,9 +206,12 @@ class App:
         # After it is called once, the update method will be automatically called every delay milliseconds
         logging.info(f"fps: {self.vid.fps}")
         self.window.bind('<Configure>', self.handle_resize)
-        self.delay = 18
-        self.update()
+        # Calculamos el delay basado en los FPS reales del video
+        # Fórmula: delay_ms = 1000 / fps
+        self.delay = max(1, int(1000 / self.vid.fps))
+        logging.info(f"Video FPS: {self.vid.fps}, Calculated delay: {self.delay}ms")
 
+        self.update()
         self.window.mainloop()
     
     def handle_resize(self, ev):
@@ -240,7 +246,7 @@ class App:
 
     def openshow(self):
         filetypes = (
-            ('text files', '*.mp4'),
+            ('text files', '*.mp4 *.avi *.mkv'),
             ('All files', '*.*')
         )
 
@@ -251,27 +257,37 @@ class App:
                         )
         if filename:
             logging.info(f"open file: {filename}")
-            logging.info(f"before load, window {self.window.geometry()}")
+            # liberamos los recursos del video actual
+            self.vid.release()
+
             self.video_source = filename
             self.vid = MyVideoCapture(self.video_source)
-            self.vid.set_only_video()
+
+            # self.vid.set_only_video()
             self.canvas.configure(width=self.vid.width, height=self.vid.height)
             self.all_time.set(self.vid.seconds)
             self.slider.configure(to=self.all_time.get())
-            logging.info(f"new fps: {self.vid.fps}")
-            # self.delay = int(self.vid.fps * 0.45)
-            # logging.info(f"delay: {self.delay}")
-            logging.info(f"window: {self.window.geometry()} ")
+            # Actualizar el dalay basando en los nuevos fps del video abierto.
+            self.delay = max(1, int(1000 / self.vid.fps))
+            logging.info(f"new fps: {self.vid.fps}, delay: {self.delay}")
+            
 
     def update(self):
-        # Get a frame from the video source
+        """Método de actualizacion con sincronizacion precisa de fps del video."""
+        start_time = time.time()  # tiempo de inicio de la actualización
+
         try:
             ret, frame = self.vid.get_frame()
-            # self.window.title(self.window_title + ' :: '+ str(round((self.vid.poss / 1000), 2)))
+            
             self.v_time.set(round((self.vid.poss / 1000), 3)) 
-            self.lb_time['text'] = str(round(self.v_time.get(), 1))
-        except:
-            logging.debug("App update error ...")
+            # Formato de tiempo mejorado (MM:SS)
+            current_sec = int(self.v_time.get())
+            minutes = current_sec // 60
+            seconds = current_sec % 60
+            self.lb_time['text'] = f"{minutes:02d}:{seconds:02d}"
+
+        except Exception as e:
+            logging.debug(f"App update error: {e}")
             # salimos del loop ...
             return
 
@@ -282,10 +298,17 @@ class App:
         if self.stop:
             # salimos del loop
             return
-
-        self.window.after(self.delay, self.update)
+        # Calculamos cuánto tiempo tomó procesar este frame
+        processing_time = time.time() - start_time
+        processing_time_ms = processing_time * 1000
+        
+        # Ajustamos el delay restando el tiempo de procesamiento
+        adjusted_delay = max(1, self.delay - processing_time_ms)
+        
+        # Programamos el siguiente frame
+        self.window.after(int(adjusted_delay), self.update)
 
 
 if __name__ == '__main__':
     # Create a window and pass it to the Application object
-    App(tk.Tk(), "Tkinter and OpenCV", "../_Work/023Nf32.avi")
+    App(tk.Tk(), "Tkinter and OpenCV", "../_Work/bbwHornywoman.mp4")
