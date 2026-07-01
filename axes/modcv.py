@@ -26,7 +26,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 class MyVideoCapture:
     """Captura de video con OpenCV, para usar en Tkinter. """
-    vid = None
     
     def __init__(self, video_source=None, thumb=None):
         ''' thumb = (100, 100 )'''
@@ -36,27 +35,36 @@ class MyVideoCapture:
         try:
             self.set_video(video_source)
             sec = round(self.seconds / 3 , 2)
-            self.vid2.set(cv2.CAP_PROP_POS_MSEC, sec*1000)
-            imagen = cv2.cvtColor(self.vid2.read()[1], cv2.COLOR_BGR2RGB)
-            imagen_f = Image.fromarray(imagen)
-            imagen_f.thumbnail(size)
+            self.vid.set(cv2.CAP_PROP_POS_MSEC, sec*1000)
+            ret, frame = self.vid.read()
+
+            if ret:
+                imagen = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                imagen_f = Image.fromarray(imagen)
+                imagen_f.thumbnail(size)
+            
             self.photo = ImageTk.PhotoImage(image=imagen_f)
-            self.vid2.release()
+            # TODO: Reinicamos al inicio para la reproduccion del video.
+            self.vid.set(cv2.CAP_PROP_POS_MSEC, 0)
+
         except Exception as e:
             logging.warning(f"init: Exception: {str(e.args)}")
+            raise ValueError(f"Unable to open video source: {video_source}")
         
     def set_info(self):
-        if self.vid2.isOpened():
-            self.n_frames = self.vid2.get(cv2.CAP_PROP_FRAME_COUNT)
-            self.fps = int(self.vid2.get(cv2.CAP_PROP_FPS))
+        """Obtiene información de la fuente de video."""
+        if self.vid.isOpened():
+            self.n_frames = self.vid.get(cv2.CAP_PROP_FRAME_COUNT)
+            self.fps = int(self.vid.get(cv2.CAP_PROP_FPS))
             self.seconds = round((self.n_frames / self.fps), 3)
             self.time = str(datetime.timedelta(seconds=self.seconds))
     
     def set_dimension(self):
-        if self.vid2.isOpened():
+        """Obtiene las dimensiones de la fuente de video."""
+        if self.vid.isOpened():
             # Get video source width and height
-            self.width = self.vid2.get(cv2.CAP_PROP_FRAME_WIDTH)
-            self.height = self.vid2.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+            self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     def set_only_video(self, url=None):
         '''reset VideoCapture url=None, --> self.url'''
@@ -64,23 +72,29 @@ class MyVideoCapture:
         self.vid =cv2.VideoCapture(new_url)
 
     def set_video(self, video_source):
-        self.video_source=None if video_source is None else video_source
+        """Abre la fuente de video y obtiene información de la misma."""
+        self.video_source=video_source if video_source is not None else None
         # Open the video source
-        self.vid2 = cv2.VideoCapture(video_source)
-        if not self.vid2.isOpened():
+        self.vid = cv2.VideoCapture(video_source)
+        
+        if not self.vid.isOpened():
             raise ValueError(f"Unable to open video source: {video_source}")
+        # obtener informacion de la fuente de video
         self.set_dimension()
         self.set_info()
 
     def set_poss(self, sec):
-        '''set possition in secons'''
+        '''Posiciona el video en la secuencia de tiempo sec, en segundos, especificados.'''
         if self.vid.isOpened():
             self.vid.set(cv2.CAP_PROP_POS_MSEC,sec*1000)
 
     def get_frame(self):
+        """Devuelve el siguiente frame de la fuente de video.
+        Returns:"""
         if self.vid.isOpened():
             ret, frame = self.vid.read()
             self.poss = self.vid.get(cv2.CAP_PROP_POS_MSEC)
+
             if ret:
                 # Return a boolean success flag and the current frame converted to BGR
                 return (ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -126,9 +140,9 @@ class MyVideoCapture:
             success = self.__get_frame_sec(sec)
 
     def release(self):
-        ''' release de video soruce when de object is destroy'''
-        # if self.vid.isOpened():
-        self.vid.release()
+        """Libera los recursos del video."""
+        if self.vid is not None and self.vid.isOpened():
+            self.vid.release()
 
 
 class App:
