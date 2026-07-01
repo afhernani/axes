@@ -201,7 +201,7 @@ class MyVideoCapture:
 
 
 class App:
-    def __init__(self, window, window_title, video_source=0):
+    def __init__(self, window, window_title, video_source=0, run_mainloop=True):
         self.window = window
         self.window_title = window_title
         self.window.title(window_title)
@@ -274,7 +274,8 @@ class App:
         self.status_label.pack(side=tk.RIGHT, padx=10)
 
         self.update()
-        self.window.mainloop()
+        if run_mainloop:
+            self.window.mainloop()
     
     def handle_resize(self, ev):
         logging.info(f"resize: {self.window.geometry()}")
