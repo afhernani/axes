@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
+import os
 import tkinter as tk
 from tkinter import Variable, ttk
 from tkinter.constants import LEFT, RIGHT, TRUE
@@ -311,4 +312,8 @@ class App:
 
 if __name__ == '__main__':
     # Create a window and pass it to the Application object
-    App(tk.Tk(), "Tkinter and OpenCV", "../_Work/bbwHornywoman.mp4")
+    file = os.path.abspath("_Work/bbwHornywoman.mp4")
+    logging.info(f"file: {file}")
+    if os.path.isfile(file):
+        App(tk.Tk(), "Tkinter and OpenCV", file) 
+    logging.info("End of program")
