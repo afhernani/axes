@@ -156,9 +156,11 @@ class MyVideoCapture:
         logging.info(f"Total de frames extraídos: {len(self.frames)}")
 
         # Guardar Gif
-        logging.info(f"Guardando archivo GIF: {namefile}")
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         if not namefile.lower().endswith('.gif'):
-            namefile += '_nfx_.gif'
+            namefile += f"_{timestamp}.gif"
+        logging.info(f"Guardando archivo GIF: {namefile}")
+        
         #  Convertimos todos los frames a PIL Image
         pil_frames = []
         for frame in self.frames:
@@ -290,8 +292,17 @@ class App:
         ret, frame = self.vid.get_frame()
 
         if ret:
-            cv2.imwrite("frame-" + time.strftime("%d-%m-%Y-%H-%M-%S") 
-                        + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+            # Extraer directorio y nombre base del video
+            video_dir = os.path.dirname(self.video_source)  # Carpeta del video
+            video_name = os.path.splitext(os.path.basename(self.video_source))[0]  # Nombre sin extensión
+            # Construir nombre del archivo: video_original_snapshot_YYYY-MM-DD_HH-MM-SS.jpg
+            timestamp = time.strftime("%d-%m-%Y-%H-%M-%S")
+            snapshot_name = f"{video_name}_snapshot_{timestamp}.jpg"           
+            # Ruta completa
+            snapshot_path = os.path.join(video_dir, snapshot_name)
+            cv2.imwrite(snapshot_path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+
+        logging.info(f"Snapshot guardado: {snapshot_path}")
 
     def stopshow(self):
         if self.btn_stop['text'] == 'II':
