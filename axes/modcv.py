@@ -7,7 +7,7 @@ from tkinter import Variable, ttk
 from tkinter.constants import LEFT, RIGHT, TRUE
 from tkinter.messagebox import showerror, showinfo
 from tkinter import filedialog as fd
-import cv2
+import cv2, threading
 from PIL import Image, ImageTk
 import time
 import datetime
@@ -120,18 +120,57 @@ class MyVideoCapture:
             return False
 
     def save_gif_file(self, namefile="smiling", duration=0.8):
-        logging.info("Extract n frames from video")
-        self.__get_frames_from_video()
-        logging.info("Saving GIF file")
-        if not namefile.endswith(('.gif')):
+        """Crea un archivo GIF a partir de la fuente de video sin bloquear la interfaz de usuario. 
+        Se extraen n frames del video y se guardan en un archivo GIF.
+        Args:"""
+        logging.info("[save_gif_file] Extracting frames from video...")
+        self.frames.clear()
+        # Usamos una instancia Temporal para evitar conflictos con la reproducción del video en la interfaz de usuario.
+        temp_vid = cv2.VideoCapture(self.video_source)
+        if not temp_vid.isOpened():
+            logging.error(f"[save_gif_file] Unable to open video source: {self.video_source}")
+            return ValueError(f"Unable to open video source: {self.video_source}")
+        
+        n_frames = int(temp_vid.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = int(temp_vid.get(cv2.CAP_PROP_FPS))
+        total_sec = n_frames / fps if fps > 0 else 10
+
+
+        logging.info("Extrayendo frames para el GIF ...")
+        ntf = 20  # Número de frames a extraer
+        rate_sec = round((total_sec / (ntf + 1)), 3)
+        sec = rate_sec
+
+        while sec <= total_sec:
+            temp_vid.set(cv2.CAP_PROP_POS_MSEC, sec * 1000)
+            ret, frame = temp_vid.read()
+            if ret:
+                self.frames.append(frame)
+                logging.info(f"Frame extraído a {sec:.2f} segundos.")
+            else:
+                logging.warning(f"No se pudo extraer el frame a {sec:.2f} segundos.")
+            sec += rate_sec
+            sec = round(sec, 2)
+
+        temp_vid.release()
+        logging.info(f"Total de frames extraídos: {len(self.frames)}")
+
+        # Guardar Gif
+        logging.info(f"Guardando archivo GIF: {namefile}")
+        if not namefile.lower().endswith('.gif'):
             namefile += '_nfx_.gif'
+        
         with imageio.get_writer(namefile, mode="I",duration=duration) as writer:
             for idx, frame in enumerate(self.frames):
                 logging.info(f"Adding frame to GIF file:  {idx + 1}")
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 writer.append_data(rgb_frame)
 
+        logging.info(f"Archivo GIF guardado exitosamente: {namefile}")
+
+        
     def __get_frames_from_video(self, nft=20):
+        """Extrae n frames del video y los guarda en la lista self.frames."""
         rate_sec = round((self.seconds / (nft + 1)), 3)
         sec = rate_sec
         success = self.__get_frame_sec(sec)
@@ -312,7 +351,7 @@ class App:
 
 if __name__ == '__main__':
     # Create a window and pass it to the Application object
-    file = os.path.abspath("_Work/bbwHornywoman.mp4")
+    file = os.path.abspath("_Work/hot.mp4")
     logging.info(f"file: {file}")
     if os.path.isfile(file):
         App(tk.Tk(), "Tkinter and OpenCV", file) 
