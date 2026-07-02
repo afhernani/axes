@@ -90,7 +90,7 @@ class MyVideoCapture:
     def set_video(self, video_source):
         """Abre la fuente de video y obtiene información de la misma."""
         self.video_source=video_source if video_source is not None else None
-        if self.video_source: guardar_config(os.path.dirname(self.video_source))
+        # if self.video_source: guardar_config(os.path.dirname(self.video_source))
         # Open the video source
         self.vid = cv2.VideoCapture(video_source)
         
