@@ -294,14 +294,21 @@ class App:
 
         if ret:
             #TODO: Guardamos el snapshot en Home si no es un archivo de video.
-            # Extraer directorio y nombre base del video
-            video_dir = os.path.dirname(self.video_source)  # Carpeta del video
-            video_name = os.path.splitext(os.path.basename(self.video_source))[0]  # Nombre sin extensión
-            # Construir nombre del archivo: video_original_snapshot_YYYY-MM-DD_HH-MM-SS.jpg
-            timestamp = time.strftime("%d-%m-%Y-%H-%M-%S")
-            snapshot_name = f"{video_name}_snapshot_{timestamp}.jpg"           
-            # Ruta completa
-            snapshot_path = os.path.join(video_dir, snapshot_name)
+            if self.video_source != 0 :
+                # Extraer directorio y nombre base del video
+                video_dir = os.path.dirname(self.video_source)  # Carpeta del video
+                video_name = os.path.splitext(os.path.basename(self.video_source))[0]  # Nombre sin extensión
+                # Construir nombre del archivo: video_original_snapshot_YYYY-MM-DD_HH-MM-SS.jpg
+                timestamp = time.strftime("%d-%m-%Y-%H-%M-%S")
+                snapshot_name = f"{video_name}_snapshot_{timestamp}.jpg"           
+                # Ruta completa
+                snapshot_path = os.path.join(video_dir, snapshot_name)
+            else:
+                # Si es la webcam, guardamos en el directorio actual
+                timestamp = time.strftime("%d-%m-%Y-%H-%M-%S")
+                snapshot_name = f"webcam_snapshot_{timestamp}.jpg"
+                snapshot_path = os.path.join(os.getcwd(), snapshot_name)
+            
             cv2.imwrite(snapshot_path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
         logging.info(f"Snapshot guardado: {snapshot_path}")
