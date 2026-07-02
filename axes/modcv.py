@@ -417,6 +417,8 @@ class App:
             # liberamos los recursos del video actual
             self.vid.release()
 
+            guardar_config(os.path.dirname(filename))
+
             self.video_source = filename
             self.vid = MyVideoCapture(self.video_source)
 
