@@ -437,5 +437,8 @@ if __name__ == '__main__':
     file = os.path.abspath("_Work/hot.mp4")
     logging.info(f"file: {file}")
     if os.path.isfile(file):
-        App(tk.Tk(), "Tkinter and OpenCV", file) 
+        App(tk.Tk(), "Tkinter and OpenCV", file)
+    else:
+        App(tk.Tk(), "Tkinter and OpenCV", 0)  # 0 para usar la webcam por defecto
+        
     logging.info("End of program")

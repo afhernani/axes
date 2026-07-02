@@ -104,7 +104,7 @@ class MainWindow:
         
         # Hacer la ventana modal (bloquea la ventana principal)
         video_window.transient(self.root)  # Sigue a la ventana padre
-        video_window.grab_set()  # 🔒 MODAL: bloquea interacción con padre
+        video_window.grab_set()  # MODAL: bloquea interacción con padre
         
         # Ruta del video (puedes cambiarla o pedir al usuario)
         video_source = "../_Work/023Nf32.avi"
@@ -115,12 +115,12 @@ class MainWindow:
             video_source = 0
         
         try:
-            # ✅ IMPORTANTE: run_mainloop=False porque YA estamos en un mainloop
+            # IMPORTANTE: run_mainloop=False porque YA estamos en un mainloop
             self.video_app = VideoApp(
                 window=video_window,
                 window_title="Reproductor de Video",
                 video_source=video_source,
-                run_mainloop=False  # ⚠️ CLAVE: no ejecutar otro mainloop
+                run_mainloop=False  # CLAVE: no ejecutar otro mainloop
             )
             
             # Cuando se cierre la ventana, liberar recursos
