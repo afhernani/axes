@@ -293,6 +293,7 @@ class App:
         ret, frame = self.vid.get_frame()
 
         if ret:
+            #TODO: Guardamos el snapshot en Home si no es un archivo de video.
             # Extraer directorio y nombre base del video
             video_dir = os.path.dirname(self.video_source)  # Carpeta del video
             video_name = os.path.splitext(os.path.basename(self.video_source))[0]  # Nombre sin extensión
@@ -440,5 +441,5 @@ if __name__ == '__main__':
         App(tk.Tk(), "Tkinter and OpenCV", file)
     else:
         App(tk.Tk(), "Tkinter and OpenCV", 0)  # 0 para usar la webcam por defecto
-        
+
     logging.info("End of program")
