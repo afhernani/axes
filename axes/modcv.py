@@ -11,8 +11,7 @@ import cv2, threading
 from PIL import Image, ImageTk
 import time
 import datetime
-import logging
-import imageio
+import logging, configparser
 
 
 __author__ = 'Hernani Aleman Ferraz'
@@ -24,6 +23,18 @@ __all__ = ('MyVideoCapture')
 
 logging.basicConfig(level=logging.DEBUG)
 
+CONFIG_FILE = "config.ini"
+
+def cargar_config():
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+    return config.get("Setings", "dirpathmovies", fallback=".")
+
+def guardar_config(carpeta):
+    config = configparser.ConfigParser()
+    config["Setings"] = {"dirpathmovies": carpeta}
+    with open(CONFIG_FILE, "w") as f:
+        config.write(f)
 
 class MyVideoCapture:
     """Captura de video con OpenCV, para usar en Tkinter. """
@@ -307,15 +318,17 @@ class App:
                 # Si es la webcam, guardamos en el directorio actual
                 # timestamp = time.strftime("%d-%m-%Y-%H-%M-%S")
                 snapshot_name = f"webcam_snapshot_{timestamp}.jpg"
-                snapshot_path = os.path.join(os.getcwd(), snapshot_name)
+                snapshot_dir  = cargar_config()  # Cargar la carpeta de snapshots desde el archivo de configuración
+                snapshot_path = os.path.join(snapshot_dir, snapshot_name)
                 snapshot_path = fd.asksaveasfilename(defaultextension=".jpg", 
                                                     initialfile=snapshot_name, 
                                                     filetypes=[("JPEG files", "*.jpg"),
                                                              ("PNG files", "*.png"), 
                                                              ("All files", "*.*")],
                                                     title="Guardar Snapshot",
-                                                    initialdir=os.getcwd()
+                                                    initialdir = snapshot_dir
                                                     )
+                guardar_config(os.path.dirname(snapshot_path))
             
             cv2.imwrite(snapshot_path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
 
