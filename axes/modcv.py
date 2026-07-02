@@ -408,9 +408,9 @@ class App:
         )
 
         filename = fd.askopenfilename(
-                        title='Open a file',
-                        initialdir='.',
-                        filetypes=filetypes
+                        title = 'Open a file',
+                        initialdir = cargar_config(),
+                        filetypes = filetypes
                         )
         if filename:
             logging.info(f"open file: {filename}")
