@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
-import os
+import os, sys
 import tkinter as tk
 from tkinter import Variable, ttk
 from tkinter.constants import LEFT, RIGHT, TRUE
@@ -25,7 +25,15 @@ __all__ = ('MyVideoCapture')
 
 logging.basicConfig(level=logging.DEBUG)
 
-CONFIG_FILE = "config.ini"
+# CORREGIDO: Calcular ruta de seting.ini de forma segura
+if getattr(sys, 'frozen', False):
+    # Si está compilado con PyInstaller, usar la carpeta del .exe
+    base_dir = os.path.dirname(sys.executable)
+else:
+    # Si está en desarrollo, usar la carpeta del script principal
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+CONFIG_FILE = os.path.join(base_dir, "config.ini")
 
 def cargar_config():
     config = configparser.ConfigParser()
