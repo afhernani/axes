@@ -13,6 +13,8 @@ import time
 import datetime
 import logging, configparser
 
+from lark import logger
+
 
 __author__ = 'Hernani Aleman Ferraz'
 __email__ = 'afhernani@gmail.com'
@@ -70,6 +72,7 @@ class MyVideoCapture:
             self.fps = int(self.vid.get(cv2.CAP_PROP_FPS))
             self.seconds = round((self.n_frames / self.fps), 3)
             self.time = str(datetime.timedelta(seconds=self.seconds))
+        logger.info(f"Video info: {self.n_frames} frames, {self.fps} fps, {self.seconds} seconds, duration: {self.time}")
     
     def set_dimension(self):
         """Obtiene las dimensiones de la fuente de video."""
@@ -77,6 +80,7 @@ class MyVideoCapture:
             # Get video source width and height
             self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
             self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        logger.info(f"Video dimensions: {self.width}x{self.height}")
 
     def set_only_video(self, url=None):
         '''reset VideoCapture url=None, --> self.url'''
@@ -86,6 +90,7 @@ class MyVideoCapture:
     def set_video(self, video_source):
         """Abre la fuente de video y obtiene información de la misma."""
         self.video_source=video_source if video_source is not None else None
+        if self.video_source == 0: guardar_config(os.path.dirname(self.video_source))
         # Open the video source
         self.vid = cv2.VideoCapture(video_source)
         
